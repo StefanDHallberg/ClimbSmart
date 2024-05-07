@@ -2,47 +2,69 @@ import pygame
 import random
 
 class Platform(pygame.sprite.Sprite):
-    def __init__(self, x, y, image):
+    def __init__(self, centerx, centery, width, height):
         super().__init__()
-        self.image = image
+        self.image = pygame.image.load("./Game/Assets/Tiles/tile_0000.png")
+        self.image = pygame.transform.scale(self.image, (width, height))  # Scale the image to the desired width
         self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
+
+        # Update the rect attribute with custom hitbox size and position
+        self.rect.centerx = centerx
+        self.rect.centery = centery
 
 class PlatformManager:
-    def __init__(self):
-        # Load player and platform images
-        self.platform_image = pygame.image.load("./Game/Assets/Tiles/tile_0000.png")
-        self.platform_width = 18
-        self.min_platform_height = 18
+    def __init__(self, screen_width, screen_height):
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        self.platforms = pygame.sprite.Group()
+        self.generate_bottom_platform()
+
+    def generate_bottom_platform(self):
+        platform_width = self.screen_width
+        platform_height = 18  # Define the height of the platform
+        platform_centerx = self.screen_width // 2
+        platform_centery = self.screen_height - platform_height // 2
+        bottom_platform = Platform(platform_centerx, platform_centery, platform_width, platform_height)
+        self.platforms.add(bottom_platform)
+
+    def update(self, player):
+        platform_height = player.height  # Get the height from the player object
+        # Generate platforms continuously
+        while len(self.platforms) < 20:
+            last_platform = self.platforms.sprites()[-1]
+            platform_width = random.randint(24, 50)
+            platform_centerx = random.randint(platform_width // 2, self.screen_width - platform_width // 2)
+            
+            # Ensure the next platform is not too far from the last one
+            min_distance = 100
+            while abs(platform_centerx - last_platform.rect.centerx) < min_distance:
+                platform_centerx = random.randint(platform_width // 2, self.screen_width - platform_width // 2)
+
+            # Adjust platform_centery to make platforms closer
+            platform_centery = last_platform.rect.centery - random.randint(65, 85)  # Adjust these values as needed
+            new_platform = Platform(platform_centerx, platform_centery, platform_width, platform_height)
+            self.platforms.add(new_platform)
+
+        # Remove platforms that are out of view
+        for platform in self.platforms:
+            if platform.rect.top > player.rect.bottom + self.screen_height:
+                platform.kill()
+
+
+
     
-    def create_platform(self, x, y):
-        platform = Platform(x, y, self.platform_image)
-        return platform
+    # def update(self, player, platform_height):
+    #     # Generate platforms continuously
+    #     while len(self.platforms) < 50:
+    #         last_platform = self.platforms.sprites()[-1]
+    #         platform_width = random.randint(40, 50)
+    #         platform_centerx = random.randint(platform_width // 2, self.screen_width - platform_width // 2)
+    #         # Adjust platform_centery to make platforms closer
+    #         platform_centery = last_platform.rect.centery - random.randint(65, 85)  # Adjust these values as needed
+    #         new_platform = Platform(platform_centerx, platform_centery, platform_width, platform_height)
+    #         self.platforms.add(new_platform)
 
-    def create_bottom_line(self, screen_width, screen_height):
-        platforms = pygame.sprite.Group()  # Create a group for platforms
-        num_platforms = screen_width // self.platform_width  # Calculate the number of platforms needed
-        print("Number of platforms:", num_platforms)  # Print the number of platforms
-        for i in range(num_platforms):
-            platform = Platform(i * self.platform_width, screen_height - 20, self.platform_image)
-            platforms.add(platform)  # Add the platform instance to the group
-        return platforms
-
-    def generate_platforms(self, screen_width, screen_height, num_platforms):
-        platforms = pygame.sprite.Group()  # Create a group for platforms
-        for _ in range(num_platforms):
-            x = random.randint(0, screen_width - self.platform_width)
-            y = random.randint(screen_height - 150, screen_height - 100)
-            platform = Platform(x, y, self.platform_image)
-            platforms.add(platform)
-        return platforms
-
-    def generate_new_platforms(self, screen_width, screen_height, num_platforms):
-        new_platforms = pygame.sprite.Group()
-        for _ in range(num_platforms):
-            x = random.randint(0, screen_width - self.platform_width)
-            y = random.randint(screen_height - 370, screen_height - 200)
-            platform = Platform(x, y, self.platform_image)
-            new_platforms.add(platform)
-        return new_platforms
+    #     # Remove platforms that are out of view
+    #     for platform in self.platforms:
+    #         if platform.rect.top > player.rect.bottom + self.screen_height:
+    #             platform.kill()

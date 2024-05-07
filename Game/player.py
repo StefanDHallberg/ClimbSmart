@@ -6,71 +6,89 @@ class Player(pygame.sprite.Sprite):
         self.image_path = "./Game/Assets/Tiles/Characters/tile_0000.png"  # Image path
         self.image = pygame.image.load(self.image_path)  # Load the image from the provided path
         self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
+        self.rect.centerx = x
+        self.rect.centery = y
 
-        self.width = 50
-        self.height = 50
-        self.vel = 5
-        self.jump_vel = -10
-        self.gravity = 0.5
-        self.is_jumping = False
-        self.vel_y = 0  # Define vel_y attribute for vertical velocity
-
-        # Save screen dimensions
         self.screen_width = screen_width
         self.screen_height = screen_height
 
-    def draw(self, screen):
-        screen.blit(self.image, self.rect)
+        self.width = 24
+        self.height = 24
+        self.vel = 10  # Initialize horizontal velocity
+        self.vel_y = 0  # Initialize vertical velocity
+        self.jump_vel = -20  # Initialize jump velocity
+        self.gravity = 0.5
+        self.is_jumping = False
+        self.flip = False  # For flipping the player image
 
-    def move(self, keys, platforms):
-        # Save the current position in case of collision
-        old_x = self.rect.x
-        old_y = self.rect.y
+        self.highest_y = self.rect.bottom  # Initialize highest position reached
+        self.score = 0  # Initialize score
 
-        if keys[pygame.K_LEFT] and self.rect.x > 0:
-            self.rect.x -= self.vel
-        if keys[pygame.K_RIGHT] and self.rect.x < self.screen_width - self.width:
-            self.rect.x += self.vel
-        if keys[pygame.K_UP] and self.rect.y > 0:
-            self.rect.y -= self.vel
-        if keys[pygame.K_DOWN] and self.rect.y < self.screen_height - self.height:
-            self.rect.y += self.vel
+    def handle_collision(self, platforms):
+        for platform in platforms:
+            if self.rect.colliderect(platform.rect):
+                if self.vel_y > 0 and self.rect.bottom <= platform.rect.top:
+                    self.rect.bottom = platform.rect.top
+                    self.rect.centery = platform.rect.centery
+                    self.vel_y = 0
+                    self.is_jumping = False
+                    self.update_score(platform.rect.centery)
 
-        # Check for collisions with platforms
-        collisions = pygame.sprite.spritecollide(self, platforms, False)
-        for platform in collisions:
-            # If the player hits a platform, revert to the old position
-            self.rect.x = old_x
-            self.rect.y = old_y
+    def update_score(self, platform_y):
+        if platform_y < self.highest_y:  # Check if climbed upwards
+            self.score += self.highest_y - platform_y  # Update score with climbed distance
+            self.highest_y = platform_y  # Update highest position reached
 
-    def jump(self, platforms):
-        if not self.is_jumping:
-            self.is_jumping = True
-            self.vel_y = self.jump_vel
+    def update(self, keys, platforms):
+        self.handle_movement(keys)
+        self.jump(keys)
+        self.handle_collision(platforms)
+        self.apply_gravity(platforms)
+        self.update_score()  # Update score based on player's movement
+
+        # Ensure the player stays within the horizontal screen boundaries
+        self.rect.left = max(self.rect.left, 0)
+        self.rect.right = min(self.rect.right, self.screen_width)
+
+    def update_score(self):
+        current_y = self.rect.bottom
+        if current_y < self.highest_y:  # Check if climbed upwards
+            climbed_distance = self.highest_y - current_y
+            # Scale down the climbed distance to adjust the scoring
+            scaled_score = climbed_distance // 10  # Adjust the scaling factor as needed
+            self.score += scaled_score
+            self.highest_y = current_y  # Update highest position reached
+
+    def handle_movement(self, keys):
+        dx = 0
+        if keys[pygame.K_a]:
+            dx = -self.vel
+            self.flip = True
+        if keys[pygame.K_d]:
+            dx = self.vel
+            self.flip = False
+
+        # Update position horizontally
+        self.rect.centerx += dx
 
     def apply_gravity(self, platforms):
-        # Check if the player is on a platform
-        on_platform = pygame.sprite.spritecollideany(self, platforms)
+        self.rect.centery += self.vel_y  # Update self.rect.centery
+        self.vel_y += self.gravity
+
+        on_platform = False
+        for platform in platforms:
+            if self.rect.colliderect(platform.rect) and self.vel_y >= 0:
+                on_platform = True
+                self.rect.bottom = platform.rect.top
+                self.vel_y = 0
+                self.is_jumping = False
+                break
 
         if not on_platform:
-            # Apply gravity only if the player is not on a platform
             self.vel_y += self.gravity
-            self.rect.y += self.vel_y
 
-            # Check for collisions with platforms while falling
-            collisions = pygame.sprite.spritecollide(self, platforms, False)
-            for platform in collisions:
-                if self.vel_y < 0:
-                    # If jumping and hitting a platform from below, stop jumping
-                    self.rect.top = platform.rect.bottom
-                    self.vel_y = 0
-                else:
-                    # If falling down onto a platform, stop falling and reset jumping state
-                    self.rect.bottom = platform.rect.top
-                    self.is_jumping = False
-                    self.vel_y = 0
-        else:
-            # Reset vertical velocity when on a platform
-            self.vel_y = 0
+    def jump(self, keys):
+        if (keys[pygame.K_w] or keys[pygame.K_UP]) and not self.is_jumping:
+            self.vel_y = self.jump_vel
+            self.is_jumping = True
+
