@@ -1,5 +1,5 @@
-from dqn_model import DQN
-from memory import ReplayMemory
+from .dqn_model import DQN
+from .memory import ReplayMemory
 
 import torch
 import torch.optim as optim
