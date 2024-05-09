@@ -18,13 +18,16 @@ class Agent:
         self.optimizer = optim.Adam(self.dqn.parameters(), lr=lr)
         self.gamma = 0.99
         self.batch_size = 64
+        self.num_actions = output_size
 
     def select_action(self, state, epsilon):
-        if random.random() < epsilon:
-            return torch.tensor([[random.randrange(len(state))]], dtype=torch.long)
-        else:
+        if random.random() > epsilon:  # Exploitation
             with torch.no_grad():
-                return self.dqn(state).max(1)[1].view(1, 1)
+                # Use the DQN to select the action with the highest Q-value
+                return self.dqn(state).max(0)[1].view(1, 1)
+        else:  # Exploration
+            # Select a random action
+            return torch.tensor([[random.randrange(self.num_actions)]], dtype=torch.long)
 
     def optimize_model(self):
         if len(self.memory) < self.batch_size:

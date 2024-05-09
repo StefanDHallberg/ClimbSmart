@@ -49,22 +49,3 @@ class PlatformManager:
         for platform in self.platforms:
             if platform.rect.top > player.rect.bottom + self.screen_height:
                 platform.kill()
-
-
-
-    
-    # def update(self, player, platform_height):
-    #     # Generate platforms continuously
-    #     while len(self.platforms) < 50:
-    #         last_platform = self.platforms.sprites()[-1]
-    #         platform_width = random.randint(40, 50)
-    #         platform_centerx = random.randint(platform_width // 2, self.screen_width - platform_width // 2)
-    #         # Adjust platform_centery to make platforms closer
-    #         platform_centery = last_platform.rect.centery - random.randint(65, 85)  # Adjust these values as needed
-    #         new_platform = Platform(platform_centerx, platform_centery, platform_width, platform_height)
-    #         self.platforms.add(new_platform)
-
-    #     # Remove platforms that are out of view
-    #     for platform in self.platforms:
-    #         if platform.rect.top > player.rect.bottom + self.screen_height:
-    #             platform.kill()
