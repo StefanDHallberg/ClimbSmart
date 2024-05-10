@@ -25,17 +25,25 @@ class ReplayMemory:
         return len(self.memory)
 
     def save_memory(self, filename):
-        with open(filename, 'wb') as f:
-            pickle.dump(self.memory, f)
-            f.close()
-        print(f"Saved replay memory to '{filename}'")
+        try:
+            with open(filename, 'wb') as f:
+                pickle.dump(self.memory, f)
+            print(f"Saved replay memory to '{filename}'")
+        except Exception as e:
+            print(f"Error saving replay memory to '{filename}': {e}")
 
     def load_memory(self, filename):
         if os.path.exists(filename) and os.path.getsize(filename) > 0:
             with open(filename, 'rb') as f:
-                self.memory = pickle.load(f)
+                try:
+                    self.memory = pickle.load(f)
+                    print(f"Loaded replay memory from '{filename}'")
+                except EOFError:
+                    print(f"Error: End of file reached while loading '{filename}'")
         else:
             print(f"File '{filename}' does not exist or is empty.")
+
+
 
 # Define the replay memory
 replay_memory = ReplayMemory(capacity=10000)

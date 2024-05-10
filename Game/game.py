@@ -38,77 +38,26 @@ class Game:
         self.prev_y = None
         self.prev_action = None
         self.step_counter = 0
+        self.prev_score = 0
+        self.done = False
         self.max_steps = 1000  # Maximum number of steps before the game is reset
-
-
         # Initialize the agent
         self.agent = Agent(input_size=10, output_size=3) # output = three discrete actions (move left, move right, jump)
-
         # Initialize exploration parameters
         self.epsilon = 1.0
         self.epsilon_decay = 0.999
         self.min_epsilon = 0.01
-
         # Initialize replay memory
-        self.replay_memory = ReplayMemory(capacity=10000)
+        self.replay_memory = ReplayMemory(10000)
         self.replay_memory.load_memory('replay_memory.pkl')
+    
+    # Adds a list to store the rewards for each episode
+    episode_rewards = []
 
     def end_episode(self):
         self.restart_game()
-    
-    def step(self, action):
-        done = False  # Initialize done to False
-        # Perform the action in the game environment
-        self.step_counter += 1
+        # print(f"After end_episode, Done: {self.done}")  # Debug print
 
-
-        on_platform = False
-        if action == 0:  # Move left
-            self.player.rect.centerx -= self.player.vel
-        elif action == 1:  # Move right
-            self.player.rect.centerx += self.player.vel
-        elif action == 2:  # Jump
-            for platform in self.platform_manager.platforms:
-                if self.player.rect.colliderect(platform.rect) and self.player.vel_y >= 0:
-                    on_platform = True
-                    break
-
-            if on_platform:
-                self.player.vel_y = self.player.jump_vel
-                self.player.is_jumping = True
-
-        if self.step_counter >= self.max_steps:
-            self.end_episode()
-            self.step_counter = 0
-            done = True
-
-        self.update()
-
-        next_state = self.get_state()
-
-        done = done or (self.game_state == "game_over")
-
-        # Check if prev_x and prev_y are None and, if so, set them to the current position
-        if self.prev_x is None and self.prev_y is None:
-            self.prev_x = self.player.rect.centerx
-            self.prev_y = self.player.rect.centery
-
-        # Modify the reward function to penalize the agent for choosing the same action repeatedly
-        reward = self.player.score
-        if action == 2 and on_platform:  # If the action was a successful jump
-            reward += 10  # Give additional reward for successful jumps
-        elif self.player.rect.centerx == self.prev_x and self.player.rect.centery == self.prev_y:
-            reward -= 0.1  # Small negative reward for staying in the same state
-        if action == self.prev_action:
-            reward -= 0.1  # Small negative reward for choosing the same action repeatedly
-
-        # Update the previous position and action
-        self.prev_x = self.player.rect.centerx
-        self.prev_y = self.player.rect.centery
-        self.prev_action = action
-
-        return next_state, reward, done
-    
     def get_state(self):
         # Get the platforms as a list
         platforms = self.platform_manager.platforms.sprites()
@@ -120,22 +69,166 @@ class Game:
 
         # Get the state of the game
         state = [self.player.rect.centerx, self.player.rect.centery, self.player.vel_y, self.player.is_jumping]
-
         # Add the platforms to the state
         for platform in platforms:
             if platform is not None:
                 state.extend([platform.rect.centerx, platform.rect.centery])
             else:
-                state.extend([None, None])
+                state.extend([-1, -1])  # Use -1 as the default value
 
         # Ensure that the state list has exactly 10 elements
         state = state[:10]
 
-        # Convert the state to a PyTorch Tensor, ignoring None values
-        state = torch.tensor([value for value in state if value is not None], dtype=torch.float32)
-
+        # Convert the state to a PyTorch Tensor
+        state = torch.tensor(state, dtype=torch.float32)
         return state
+    
 
+    def step(self, action):
+        self.step_counter += 1
+        keys = {pygame.K_a: 0, pygame.K_d: 0, pygame.K_w: 0, pygame.K_UP: 0}  # Initialize keys to {pygame.K_a: 0, pygame.K_d: 0, pygame.K_w: 0, pygame.K_UP: 0} (no keys pressed)
+        if action == 0:  # Move left
+            keys[pygame.K_a] = 1
+        elif action == 1:  # Move right
+            keys[pygame.K_d] = 1
+        elif action == 2:  # Jump
+            keys[pygame.K_w] = 1
+            keys[pygame.K_UP] = 1
+
+        self.player.update(keys, self.platform_manager.platforms)  # Update the player
+        # Check if the player is on a platform
+        on_platform = False
+        for platform in self.platform_manager.platforms:
+            if self.player.rect.colliderect(platform.rect):
+                on_platform = True
+                break
+        
+        # Terminate the episode if the agent is not making progress within x steps
+        if self.step_counter >= self.max_steps:
+            self.done = True
+            print(f"Step counter: {self.step_counter}, Done: {self.done}")  # Debug print
+            self.end_episode()
+            self.step_counter = 0  # Reset the step counter
+        else:
+            self.done = False
+
+        self.update()
+        next_state = self.get_state()
+        self.done = self.done or (self.game_state == "game_over")
+
+        # Check if prev_x and prev_y are None and, if so, set them to the current position
+        if self.prev_x is None and self.prev_y is None:
+            self.prev_x = self.player.rect.centerx
+            self.prev_y = self.player.rect.centery
+
+        # Modify the reward function to penalize the agent for choosing the same action repeatedly
+        reward = self.player.score
+        if action == 2: # If the action was a successful jump
+            if on_platform:
+                reward += 10  # Give additional reward for successful jumps
+            else:
+                reward -= 1  # Penalize failed jumps
+        elif self.player.rect.centerx == self.prev_x and self.player.rect.centery == self.prev_y:
+            reward -= 0.1  # Small negative reward for staying in the same state
+        if action == self.prev_action:
+            reward -= 0.1  # Small negative reward for choosing the same action repeatedly
+
+        # Update the previous position and action
+        self.prev_x = self.player.rect.centerx
+        self.prev_y = self.player.rect.centery
+        self.prev_action = action
+
+        # Update the previous score
+        self.prev_score = self.player.score
+
+        return next_state, reward, self.done
+
+    def main(self):
+        episode = 0  # Initialize episode counter
+        while self.is_running:  # Main game loop
+            self.end_episode()  # End the previous episode
+            total_reward = 0  # Initialize total reward for the current episode
+
+            # Loop until the episode is done
+            while not self.done and self.is_running:
+                state = self.get_state()  # Get the current state
+                action = self.agent.select_action(state, self.epsilon)  # Select action
+                next_state, reward, self.done = self.step(action)  # Perform action
+
+                if self.done:  # If done is True, break the loop to end the episode
+                    break
+
+                total_reward += reward  # Accumulate reward
+
+                # Store experience in replay memory
+                self.replay_memory.push((state, action, reward, next_state, self.done))
+
+                # Optimize agent's model if replay memory is sufficient
+                if len(self.agent.memory) > self.agent.batch_size:
+                    experiences = self.agent.memory.sample(self.agent.batch_size)
+                    self.agent.optimize_model(experiences)
+
+                # Update game screen
+                self.run(self.agent, self.epsilon, self.replay_memory, training=False, episode=episode, total_reward=total_reward)
+
+            # End of episode
+            self.episode_rewards.append(total_reward)  # Store total reward for the episode
+            print(f"Episode: {episode + 1}, score: {self.player.score}, Total reward: {total_reward}")
+
+            # Update exploration rate
+            self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
+
+            # Save replay memory at the end of training
+            self.replay_memory.save_memory('replay_memory.pkl')
+
+            # Increment episode counter
+            episode += 1
+
+        # # Training loop
+        # for episode in range(3000):
+        #     self.end_episode()
+        #     total_reward = 0  # Initialize the total reward for this episode
+        #     print(f"Before loop, Done: {self.done}")  # Debug print
+        #     while self.done is False:  # While the episode is not done
+        #         if self.is_running is False:  # If the flag is set, break out of the loop
+        #             break
+
+        #         state = self.get_state()  # Get the current state of the game
+        #         action = self.agent.select_action(state, self.epsilon)  # Let the agent choose an action based on the current state and exploration rate
+        #         next_state, reward, self.done = self.step(action)  # Perform the action in the game environment
+        #         print(f"After step, Done: {self.done}")  # Debug print
+
+        #         if self.done:  # If done is True, start a new episode
+        #             break
+
+        #         total_reward += reward  # Add the reward to the total reward for this episode
+        #         # Store the experience in the replay memory
+        #         self.replay_memory.push((state, action, reward, next_state, self.done))
+        #         # Call the run method to update the game screen
+        #         self.run(self.agent, self.epsilon, self.replay_memory, training=False, episode=episode, total_reward=total_reward)
+
+        #         # Train the agent with a batch of experiences from the replay memory
+        #         if len(self.replay_memory) > self.agent.batch_size:
+        #             self.experiences = self.replay_memory.sample(self.agent.batch_size)
+        #             self.agent.optimize_model()
+        #     # Check if the episode is done
+        #     if self.done:
+        #         break
+                
+        #     # Add the total reward for this episode to the list of episode rewards
+        #     self.episode_rewards.append(total_reward)
+            
+        #     # Print the episode number and the total reward
+        #     print(f"Episode: {episode + 1}, score: {self.player.score}, Total reward: {total_reward}")
+
+        #     # Decay exploration rate
+        #     self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
+
+        #     # Save replay memory at the end of training
+        #     self.replay_memory.save_memory('replay_memory.pkl')
+    
+        #     if self.is_running is False:  # If the flag is set, break out of the loop
+        #             break
 
     def update(self):
         keys = pygame.key.get_pressed()
@@ -155,26 +248,26 @@ class Game:
         # Check if the player falls off the platforms
         if self.player.rect.top > self.screen_height:
             self.game_state = "game_over"
-
+    
     def run(self, agent, epsilon, replay_memory, training=False, episode=None, total_reward=None):  # Add 'training' parameter
         while self.is_running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.is_running = False
-                    break  # Break out of the event loop
-            
+                    break
+            if not self.is_running:
+                break
+
             if self.game_state == "running":
                 # Select an action using epsilon-greedy policy
                 state = self.get_state()
                 action = self.agent.select_action(state, self.epsilon)
-                next_state, reward, done = self.step(action)
+                next_state, reward, self.done = self.step(action)
 
                 # Store the transition in the replay memory
                 self.replay_memory.push((state, action, next_state, reward))
-
                 # Optimize the model
                 self.agent.optimize_model()
-
                 # Decay exploration rate
                 self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
 
@@ -184,9 +277,6 @@ class Game:
                 # Render the graphics
                 GraphicsHandler.render(self.screen, self.player, self.platform_manager.platforms, self.camera_offset_y, episode, total_reward)
 
-
-                #print(f"Selected action: {action}")  # Debug print
-
             elif self.game_state == "game_over":
                 self.show_game_over_screen()
                 time.sleep(1.5)  # Wait for a few seconds
@@ -195,13 +285,8 @@ class Game:
 
             elif self.game_state == "waiting":
                 if self.restart_requested:
-                    self.restart_game()
+                    self.end_episode()
                     self.restart_requested = False
-
-            # Save the replay memory at the end of the episode
-        if not self.is_running:
-            self.replay_memory.save_memory('replay_memory.pkl')
-
 
     def restart_game(self):
         # Reset game state
@@ -209,13 +294,14 @@ class Game:
         self.player = Player(self.screen_width // 2, self.screen_height - 20, self.screen_width, self.screen_height)
         self.player.score = 0
         self.step_counter = 0
-        # self.player.highest_y = self.screen_height
         self.prev_x = None
         self.prev_y = None
         self.prev_action = None
         self.camera_offset_y = 0
         self.platform_manager = PlatformManager(self.screen_width, self.screen_height)  # Initialize new platform manager
         self.platform_manager.generate_bottom_platform()  # Generate the initial bottom platform
+        self.prev_score = 0
+        self.done = False  # Reset done status
         
 
     def show_game_over_screen(self):
@@ -238,55 +324,7 @@ class Game:
         # Update the display
         pygame.display.flip()
 
-# Adds a list to store the rewards for each episode
-episode_rewards = []
-
-
 if __name__ == "__main__":
     # Initialize the game and agent
     game = Game()
-    agent = Agent(input_size=10, output_size=3) # output = three discrete actions (move left, move right, jump)
-
-    # Initialize exploration parameters
-    epsilon = 1.0
-    epsilon_decay = 0.999
-    min_epsilon = 0.01
-
-    # Load replay memory if available
-    replay_memory = ReplayMemory(capacity=10000)
-    replay_memory.load_memory('replay_memory.pkl')
-
-    # Training loop
-    for episode in range(3000):
-        game.end_episode()
-        total_reward = 0  # Initialize the total reward for this episode
-
-        done = False
-        while not done:
-            state = game.get_state()  # Get the current state of the game
-            action = agent.select_action(state, epsilon)  # Let the agent choose an action based on the current state and exploration rate
-            next_state, reward, done = game.step(action)  # Perform the action in the game environment
-            total_reward += reward  # Add the reward to the total reward
-
-            # Store the experience in the replay memory
-            replay_memory.push((state, action, reward, next_state, done))
-
-            # Call the run method to update the game screen
-            game.run(agent, epsilon, replay_memory, training=False, episode=episode, total_reward=total_reward)
-
-            # Train the agent with a batch of experiences from the replay memory
-            if len(replay_memory) > agent.batch_size:
-                experiences = replay_memory.sample(agent.batch_size)
-                agent.optimize_model()
-
-        # Add the total reward for this episode to the list of episode rewards
-        episode_rewards.append(total_reward)
-
-        # Print the episode number and the total reward
-        print(f"Episode: {episode + 1}, Total reward: {total_reward}")
-
-        # Decay exploration rate
-        epsilon = max(min_epsilon, epsilon * epsilon_decay)
-
-        # Save replay memory at the end of training
-        replay_memory.save_memory('replay_memory.pkl')
+    game.main()
