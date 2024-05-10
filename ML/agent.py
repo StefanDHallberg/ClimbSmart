@@ -29,12 +29,16 @@ class Agent:
             # Select a random action
             return torch.tensor([[random.randrange(self.num_actions)]], dtype=torch.long)
 
+    # def optimize_model(self):
+    #     if len(self.memory) < self.batch_size:
+    #         return
     def optimize_model(self):
         if len(self.memory) < self.batch_size:
             return
         
         transitions = self.memory.sample(self.batch_size)
         batch = Transition(*zip(*transitions))
+        # batch = transitions(*zip(*experiences))
 
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), dtype=torch.bool)
         non_final_next_states = torch.cat([s for s in batch.next_state if s is not None])
