@@ -1,45 +1,40 @@
-from .dqn_model import DQN
-from .memory import ReplayMemory
-
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
 import random
-import numpy as np
 from collections import namedtuple
 
-# defines the transition tuple that will be stored in the replay memory buffer.
+from .dqn_model import DQN
+from .memory import ReplayMemory
+
+# Defining the transition tuple that will be stored in the replay memory buffer.
 Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
 class Agent:
-    def __init__(self, input_size, output_size, lr=0.001):
+    def __init__(self, input_size, output_size, lr=0.001, gamma=0.99, batch_size=64, capacity=10000):
         self.dqn = DQN(input_size, output_size)
-        self.memory = ReplayMemory(capacity=10000)
+        self.memory = ReplayMemory(capacity=capacity)
         self.optimizer = optim.Adam(self.dqn.parameters(), lr=lr)
-        self.gamma = 0.99
-        self.batch_size = 64
+        self.gamma = gamma
+        self.batch_size = batch_size
         self.num_actions = output_size
 
     def select_action(self, state, epsilon):
         if random.random() > epsilon:  # Exploitation
             with torch.no_grad():
                 # Use the DQN to select the action with the highest Q-value
-                return self.dqn(state).max(0)[1].view(1, 1)
+                return self.dqn(state).max(1)[1].view(1, 1)
         else:  # Exploration
             # Select a random action
             return torch.tensor([[random.randrange(self.num_actions)]], dtype=torch.long)
 
-    # def optimize_model(self):
-    #     if len(self.memory) < self.batch_size:
-    #         return
-    def optimize_model(self):
+    def optimize_model(self, experiences, batch_size):
         if len(self.memory) < self.batch_size:
             return
         
         transitions = self.memory.sample(self.batch_size)
         batch = Transition(*zip(*transitions))
-        # batch = transitions(*zip(*experiences))
-
+        
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), dtype=torch.bool)
         non_final_next_states = torch.cat([s for s in batch.next_state if s is not None])
 
