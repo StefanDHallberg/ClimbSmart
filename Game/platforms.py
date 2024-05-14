@@ -41,7 +41,7 @@ class PlatformManager:
                 platform_centerx = random.randint(platform_width // 2, self.screen_width - platform_width // 2)
 
             # Adjust platform_centery to make platforms closer
-            platform_centery = last_platform.rect.centery - random.randint(65, 85)  # Adjust these values as needed
+            platform_centery = last_platform.rect.centery - random.randint(65, 85)  # Adjust these values as needed, based on the desired platform spacing and height.
             new_platform = Platform(platform_centerx, platform_centery, platform_width, platform_height)
             self.platforms.add(new_platform)
 

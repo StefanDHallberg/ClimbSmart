@@ -21,7 +21,7 @@ class GraphicsHandler:
 
         # Render the episode number and the total reward
         episode_font = pygame.font.Font(None, 36)
-        episode_text = episode_font.render("Episode: " + str(episode + 1), True, (255, 0, 0))  # Render episode text
+        episode_text = episode_font.render("Episode: " + str(episode), True, (255, 0, 0))  # Render episode text
         screen.blit(episode_text, (10, 50))  # Adjust position as needed
 
         reward_font = pygame.font.Font(None, 36)

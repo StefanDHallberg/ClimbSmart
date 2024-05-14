@@ -42,15 +42,19 @@ class ReplayMemory:
                     print(f"Error: End of file reached while loading '{filename}'")
         else:
             print(f"File '{filename}' does not exist or is empty.")
+    
+    def clear(self):
+        self.memory.clear()
+        print("Cleared replay memory")
 
 
 
 # Define the replay memory
 replay_memory = ReplayMemory(capacity=10000)
 
-try:
-    replay_memory.load_memory('replay_memory.pkl')
-except (FileNotFoundError, pickle.UnpicklingError):
-    print("Could not load replay memory from 'replay_memory.pkl'")
+# try:
+#     replay_memory.load_memory('replay_memory.pkl')
+# except (FileNotFoundError, pickle.UnpicklingError):
+#     print("Could not load replay memory from 'replay_memory.pkl'")
 
 
