@@ -51,10 +51,3 @@ class ReplayMemory:
 
 # Define the replay memory
 replay_memory = ReplayMemory(capacity=10000)
-
-# try:
-#     replay_memory.load_memory('replay_memory.pkl')
-# except (FileNotFoundError, pickle.UnpicklingError):
-#     print("Could not load replay memory from 'replay_memory.pkl'")
-
-

@@ -23,6 +23,8 @@ class Player(pygame.sprite.Sprite):
 
         self.highest_y = self.rect.bottom  # Initialize highest position reached
         self.score = 0  # Initialize score
+        self.high_score = 0
+        self.reached_high_score = False
 
         # Store initial position
         self.initial_x = x
@@ -38,17 +40,31 @@ class Player(pygame.sprite.Sprite):
                     self.is_jumping = False
                     self.update_score(platform.rect.centery)
 
-    def update_score(self, platform_y):
-        if platform_y < self.highest_y:  # Check if climbed upwards
-            self.score += self.highest_y - platform_y  # Update score with climbed distance
-            self.highest_y = platform_y  # Update highest position reached
+    def update_score(self, platform_y=None):
+        current_y = self.rect.bottom if platform_y is None else platform_y
+        climbed_distance = self.highest_y - current_y
+        # Only add to the score if the player is climbing
+        if climbed_distance > 0:
+            # Scale down the climbed distance to adjust the scoring
+            scaled_score = climbed_distance // 10  # Adjust the scaling factor as needed
+            self.score += scaled_score
+            self.highest_y = current_y  # Update highest position reached
+
+        # Update the high score if the current score is higher
+        if self.score > self.high_score:
+            self.high_score = self.score
+
+
     
     def reset(self):
+        self.score = 0
         # Reset player position and attributes to initial state
         self.rect.centerx = self.initial_x
         self.rect.centery = self.initial_y
         self.vel_y = 0
         self.is_jumping = False
+        self.reached_high_score = False
+        
 
     def update(self, keys, platforms):
         self.handle_movement(keys)
@@ -67,19 +83,11 @@ class Player(pygame.sprite.Sprite):
                 return True
         return False
 
-    def update_score(self):
-        current_y = self.rect.bottom
-        if current_y < self.highest_y:  # Check if climbed upwards
-            climbed_distance = self.highest_y - current_y
-            # Scale down the climbed distance to adjust the scoring
-            scaled_score = climbed_distance // 10  # Adjust the scaling factor as needed
-            self.score += scaled_score
-            self.highest_y = current_y  # Update highest position reached
-    
     def is_game_over(self):
-        # Define conditions for game over
-        # if the player falls below a certain y-coordinate
-        return self.rect.top > self.screen_height
+        game_over = self.rect.top > self.screen_height # if the player falls below a certain y-coordinate
+        if game_over:
+            self.reset()
+        return game_over, self.score
     
     def staying_still(self):
         return self.initial_x == 0 and self.initial_y == 0
@@ -116,4 +124,3 @@ class Player(pygame.sprite.Sprite):
         if (keys[pygame.K_w] or keys[pygame.K_UP]) and not self.is_jumping:
             self.vel_y = self.jump_vel
             self.is_jumping = True
-

@@ -30,7 +30,7 @@ class PlatformManager:
     def update(self, player):
         platform_height = player.height  # Get the height from the player object
         # Generate platforms continuously
-        while len(self.platforms) < 20:
+        while len(self.platforms) < 22:
             last_platform = self.platforms.sprites()[-1]
             platform_width = random.randint(24, 50)
             platform_centerx = random.randint(platform_width // 2, self.screen_width - platform_width // 2)
@@ -41,7 +41,7 @@ class PlatformManager:
                 platform_centerx = random.randint(platform_width // 2, self.screen_width - platform_width // 2)
 
             # Adjust platform_centery to make platforms closer
-            platform_centery = last_platform.rect.centery - random.randint(65, 85)  # Adjust these values as needed, based on the desired platform spacing and height.
+            platform_centery = last_platform.rect.centery - random.randint(65, 75)  # Adjust these values as needed, based on the desired platform spacing and height.
             new_platform = Platform(platform_centerx, platform_centery, platform_width, platform_height)
             self.platforms.add(new_platform)
 
