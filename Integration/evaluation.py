@@ -1,4 +1,7 @@
-from torch.utils.tensorboard import SummaryWriter
+class Evaluation:
+    def __init__(self, ai_integrations):
+        self.ai_integrations = ai_integrations
 
-writer = SummaryWriter('runs/DQN_experiment')
-
+    def evaluate_agent(self):
+        # Evaluation logic here...
+        pass

@@ -54,8 +54,6 @@ class Player(pygame.sprite.Sprite):
         if self.score > self.high_score:
             self.high_score = self.score
 
-
-    
     def reset(self):
         self.score = 0
         # Reset player position and attributes to initial state
@@ -64,7 +62,6 @@ class Player(pygame.sprite.Sprite):
         self.vel_y = 0
         self.is_jumping = False
         self.reached_high_score = False
-        
 
     def update(self, keys, platforms):
         self.handle_movement(keys)
@@ -86,6 +83,7 @@ class Player(pygame.sprite.Sprite):
     def is_game_over(self):
         game_over = self.rect.top > self.screen_height # if the player falls below a certain y-coordinate
         if game_over:
+            print(f"Game over because player y-coordinate {self.rect.top} > {self.screen_height}")
             self.reset()
         return game_over, self.score
     
