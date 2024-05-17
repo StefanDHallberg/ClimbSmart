@@ -12,6 +12,8 @@ from Integration import GameSetup, GameAIIntegrations, TrainingLoop
 def main():
     pygame.init()  # Initialize all Pygame modules
     pygame.font.init()  # Specifically ensure the font module is initialized
+    # clock = pygame.time.Clock()
+    # clock.tick(60)  # Maintain the frame rate
 
     game_setup = GameSetup()  # Instantiate GameSetup
     ai_integrations = GameAIIntegrations(game_setup.agent, game_setup.replay_memory)  # Assume this is already defined somewhere

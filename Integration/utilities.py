@@ -1,6 +1,5 @@
 import pygame
 from Game.graphics import GraphicsHandler
-import torch
 
 def handle_events(game_setup):
     """ Handle basic pygame events like quitting the game. """
