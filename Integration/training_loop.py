@@ -1,9 +1,7 @@
 import torch
-import time
 import pygame
+import time
 from .game_setup import GameSetup
-from Game import GraphicsHandler
-from .utilities import handle_events, update_display
 
 class TrainingLoop:
     def __init__(self, game_setup, ai_integrations):
@@ -11,7 +9,6 @@ class TrainingLoop:
         self.ai_integrations = ai_integrations
         self.max_episode_duration = 10
         self.start_time = None
-        self.clock = pygame.time.Clock()  # Define a clock object
 
     def run_game(self):
         episode = 1
@@ -27,14 +24,11 @@ class TrainingLoop:
         self.game_setup.player.reset()
         total_reward = 0
         self.start_time = time.time()
-        
-        
-        while self.game_setup.is_running:
-            handle_events(self.game_setup)
 
+        while self.game_setup.is_running:
             state = self.game_setup.get_state()
             action = self.ai_integrations.select_action_and_update(state)
-            self.next_state, reward, done, current_score = self.step(action)
+            next_state, reward, done, current_score = self.step(action)
 
             total_reward += reward
 
@@ -42,49 +36,38 @@ class TrainingLoop:
                 print(f"Game over: Ending episode {episode} with score {current_score}")
                 break
 
-            # self.game_setup.update_camera()
-            # update_display(self.game_setup, episode, total_reward)
-            GraphicsHandler.render(self.game_setup, episode, total_reward)
-
-
             self.ai_integrations.writer.add_scalar('Reward', reward, episode)
-
-            # print(f"Episode {episode}, Reward: {reward}, Total Reward: {total_reward}")
 
             if time.time() - self.start_time > self.max_episode_duration:
                 print(f"Episode {episode} ended due to exceeding maximum duration of {self.max_episode_duration} seconds.")
                 break
 
-            self.clock.tick(60)  # Maintain the frame rate
-
         self.ai_integrations.writer.add_scalar('Total Reward', total_reward, episode, current_score)
         print(f"Episode {episode} completed with total reward: {total_reward}")
-        return self.game_setup.is_running  # Return the current state of is_running
+        return self.game_setup.is_running
 
     def step(self, action):
-        action = action.item() if isinstance(action, torch.Tensor) else action  # Ensure action is a usable format
-        keys = {pygame.K_a: 0, pygame.K_d: 0, pygame.K_w: 0, pygame.K_UP: 0}
+        action = action.item() if isinstance(action, torch.Tensor) else action
+        keys = {pygame.K_a: False, pygame.K_d: False, pygame.K_w: False, pygame.K_UP: False}
         action_map = {0: pygame.K_a, 1: pygame.K_d, 2: [pygame.K_w, pygame.K_UP]}
-        
+
         mapped_keys = action_map.get(action, [])
         if isinstance(mapped_keys, list):
             for key in mapped_keys:
-                keys[key] = 1
+                keys[key] = True
         else:
-            keys[mapped_keys] = 1
+            keys[mapped_keys] = True
 
         self.game_setup.player.update(keys, self.game_setup.platform_manager.platforms)
         on_platform = self.game_setup.player.is_on_platform(self.game_setup.platform_manager.platforms)
         next_state = self.game_setup.get_state()
         reward = self.calculate_reward(action, on_platform)
         done, score = self.game_setup.player.is_game_over()
-        # print(f"Action: {action}, Done: {done}, Reward: {reward}")
 
         return next_state, reward, done, score
 
     def calculate_reward(self, action, on_platform):
         reward = 0
-        # print(f"Action taken: {action}, On platform: {on_platform}") # TJEK DET HER I MORGEN - HVORFOR ER DETTE IKKE TRUE? 
         if action == 2 and on_platform:
             reward = 1
             if self.game_setup.player.score > self.game_setup.player.high_score:

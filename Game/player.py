@@ -91,16 +91,14 @@ class Player(pygame.sprite.Sprite):
         return self.initial_x == 0 and self.initial_y == 0
 
     def handle_movement(self, keys):
-        dx = 0
-        if keys[pygame.K_a]:
-            dx = -self.vel
-            self.flip = True
-        if keys[pygame.K_d]:
-            dx = self.vel
-            self.flip = False
-
-        # Update position horizontally
-        self.rect.centerx += dx
+        if keys.get(pygame.K_a, False):
+            self.rect.centerx -= self.vel
+        if keys.get(pygame.K_d, False):
+            self.rect.centerx += self.vel
+        if keys.get(pygame.K_w, False) or keys.get(pygame.K_UP, False):
+            if not self.is_jumping:
+                self.is_jumping = True
+                self.vel_y = -self.jump_vel
 
     def apply_gravity(self, platforms):
         self.rect.centery += self.vel_y  # Update self.rect.centery
