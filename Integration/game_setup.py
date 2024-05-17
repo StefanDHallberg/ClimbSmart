@@ -18,7 +18,6 @@ class GameSetup:
         self.screen_height = 900
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
         pygame.display.set_caption("ClimbSmart")
-        self.clock = pygame.time.Clock()
 
     def initialize_game_elements(self):
         x_position = self.screen_width // 2
@@ -47,4 +46,14 @@ class GameSetup:
         state_tensor = torch.tensor(state, dtype=torch.float32).view(1, -1)
         # print(f"State tensor shape: {state_tensor.shape}")  # Debug print
         return state_tensor
+    
+    def update_camera(self):
+        # Adjust the camera to follow the player
+        player_center_y = self.player.rect.centery
+        screen_center_y = self.screen_height // 2
+
+        if player_center_y < screen_center_y:
+            self.camera_offset_y = screen_center_y - player_center_y
+        else:
+            self.camera_offset_y = 0
 
