@@ -1,6 +1,7 @@
-import multiprocessing
 import sys
 import os
+import pygame
+import multiprocessing
 
 # Get the directory of the script
 script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -9,28 +10,58 @@ parent_dir = os.path.abspath(os.path.join(script_dir, os.pardir))
 sys.path.append(parent_dir)
 
 from Integration import GameSetup, GameAIIntegrations, TrainingLoop
+from Game.graphics import GraphicsHandler
 
-def run_game_instance():
-    # Avoid initializing pygame in worker processes
-    game_setup = GameSetup()
-    ai_integrations = GameAIIntegrations(game_setup.agent, game_setup.replay_memory)
-    training_loop = TrainingLoop(game_setup, ai_integrations)
-    training_loop.run_game()
+def run_game_instance(queues, num_agents):
+    try:
+        pygame.init()
+        pygame.font.init()
+        print("Pygame initialized in run_game_instance")
+
+        game_setup = GameSetup(num_agents)  # Assuming GameSetup can handle multiple agents
+        ai_integrations = [GameAIIntegrations(game_setup.agents[i], game_setup.replay_memory) for i in range(num_agents)]
+        training_loop = TrainingLoop(game_setup, ai_integrations, queues)
+        training_loop.run_game()
+    except Exception as e:
+        print(f"Exception in game instance: {e}")
+    finally:
+        pygame.quit()
+        print("Pygame quit in run_game_instance")
 
 def main():
-    num_processes = 4  # Number of game instances to run in parallel
+    pygame.init()
+    pygame.font.init()
+    print("Pygame initialized in main")
 
-    processes = []
-    
-    # Create and start processes for each game instance
-    for _ in range(num_processes):
-        p = multiprocessing.Process(target=run_game_instance)
-        processes.append(p)
-        p.start()
+    num_agents = 4  # Number of agents
+    screen_width, screen_height = 800, 900
 
-    # Wait for all processes to finish
-    for p in processes:
-        p.join()
+    # Initialize the main screen
+    screen = pygame.display.set_mode((screen_width, screen_height))
+    pygame.display.set_caption("ClimbSmart Multi-Agent")
+
+    queues = [multiprocessing.Queue() for _ in range(num_agents)]
+
+    # Run a single game instance
+    game_process = multiprocessing.Process(target=run_game_instance, args=(queues, num_agents))
+    game_process.start()
+
+    try:
+        while game_process.is_alive():
+            for queue in queues:
+                if not queue.empty():
+                    render_data = queue.get()
+                    GraphicsHandler.render(screen, render_data)
+
+            pygame.display.flip()
+            pygame.time.delay(100)
+    except KeyboardInterrupt:
+        print("Interrupted by user.")
+    finally:
+        game_process.terminate()
+        game_process.join()
+        pygame.quit()
+        print("Pygame quit in main")
 
 if __name__ == "__main__":
     main()
