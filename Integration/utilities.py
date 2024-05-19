@@ -17,4 +17,3 @@ def update_display(game_setup, episode, total_reward):
                            game_setup.camera_offset_y, episode, total_reward)
     pygame.display.flip() # Refresh the screen display
     # game_setup.clock.tick(60)  # Maintaining a consistent frame rate
-
