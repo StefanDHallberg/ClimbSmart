@@ -5,15 +5,19 @@ class GraphicsHandler:
     def render(screen, data):
         screen.fill((0, 0, 0))  # Clear the screen with black
 
+        camera_offset_y = data.get('camera_offset_y', 0)
+
         # Drawing platforms
         for platform in data['platforms']:
             rect = pygame.Rect(platform['rect'])
+            rect = rect.move(0, camera_offset_y)  # Adjust for camera offset
             image = pygame.image.fromstring(platform['image'], rect.size, 'RGBA')
             screen.blit(image, rect)
 
         # Drawing players
         for player in data['players']:
             rect = pygame.Rect(player['rect'])
+            rect = rect.move(0, camera_offset_y)  # Adjust for camera offset
             image = pygame.image.fromstring(player['image'], rect.size, 'RGBA')
             screen.blit(image, rect)
 

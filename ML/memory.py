@@ -10,11 +10,9 @@ class ReplayMemory:
         self.memory = collections.deque(maxlen=capacity)
         self.lock = threading.Lock()
 
-
     def push(self, transition):
         with self.lock:
             self.memory.append(transition)
-
 
     def sample(self, batch_size):
         with self.lock:
@@ -36,20 +34,21 @@ class ReplayMemory:
     def load_memory(self, filename):
         if os.path.exists(filename) and os.path.getsize(filename) > 0:
             with self.lock:
-                with open(filename, 'rb') as f:
-                    try:
+                try:
+                    with open(filename, 'rb') as f:
                         self.memory = pickle.load(f)
-                        print(f"Loaded replay memory from '{filename}'")
-                    except EOFError:
-                        print(f"Error: End of file reached while loading '{filename}'")
+                    print(f"Loaded replay memory from '{filename}'")
+                except EOFError:
+                    print(f"Error: End of file reached while loading '{filename}'")
+                except Exception as e:
+                    print(f"Error loading replay memory from '{filename}': {e}")
         else:
             print(f"File '{filename}' does not exist or is empty.")
-    
+
     def clear(self):
-        self.memory.clear()
-        print("Cleared replay memory")
-
-
+        with self.lock:
+            self.memory.clear()
+            print("Cleared replay memory")
 
 # Define the replay memory
-replay_memory = ReplayMemory(capacity=10000)
+# replay_memory = ReplayMemory(capacity=10000)
