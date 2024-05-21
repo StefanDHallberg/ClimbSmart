@@ -33,81 +33,81 @@ class Player(pygame.sprite.Sprite):
     def handle_collision(self, platforms):
         for platform in platforms:
             if self.rect.colliderect(platform.rect):
-                if self.vel_y > 0 and self.rect.bottom <= platform.rect.top:
+                if self.vel_y > 0 and self.rect.bottom <= platform.rect.top + self.vel_y:
                     self.rect.bottom = platform.rect.top
-                    self.rect.centery = platform.rect.centery
                     self.vel_y = 0
                     self.is_jumping = False
                     self.update_score(platform.rect.centery)
+                    platform.on_platform = True
 
     def update_score(self, platform_y=None):
         current_y = self.rect.bottom if platform_y is None else platform_y
         climbed_distance = self.highest_y - current_y
-        # Only add to the score if the player is climbing
         if climbed_distance > 0:
-            # Scale down the climbed distance to adjust the scoring
-            scaled_score = climbed_distance // 10  # Adjust the scaling factor as needed
+            scaled_score = climbed_distance // 10
             self.score += scaled_score
-            self.highest_y = current_y  # Update highest position reached
-
-        # Update the high score if the current score is higher
+            self.highest_y = current_y
         if self.score > self.high_score:
             self.high_score = self.score
+    
+    def staying_still(self):
+        return self.initial_x == 0 and self.initial_y == 0
 
     def reset(self):
         self.score = 0
-        # Reset player position and attributes to initial state
         self.rect.centerx = self.initial_x
         self.rect.centery = self.initial_y
         self.vel_y = 0
         self.is_jumping = False
         self.reached_high_score = False
+        # self.camera_offset_y = 0
 
     def update(self, keys, platforms):
         self.handle_movement(keys)
         self.jump(keys)
         self.handle_collision(platforms)
         self.apply_gravity(platforms)
-        self.update_score()  # Update score based on player's movement
+        self.update_score()
 
-        # Ensure the player stays within the horizontal screen boundaries
         self.rect.left = max(self.rect.left, 0)
         self.rect.right = min(self.rect.right, self.screen_width)
-    
+
     def is_on_platform(self, platforms):
         for platform in platforms:
             if self.rect.colliderect(platform.rect) and self.rect.bottom == platform.rect.top:
                 return True
         return False
 
-    def is_game_over(self):
-        game_over = self.rect.top > self.screen_height # if the player falls below a certain y-coordinate
-        if game_over:
-            print(f"Game over because player y-coordinate {self.rect.top} > {self.screen_height}")
-            self.reset()
-        return game_over, self.score
+    # def is_game_over(self, platforms):
+    #     if self.rect.top > self.screen_height:
+    #         print(f"Game over because player y-coordinate {self.rect.top} > {self.screen_height}")
+    #         self.reset()
+    #         return True, self.score
+    #     if self.rect.bottom > self.screen_height and not any(platform.rect.colliderect(self.rect) for platform in platforms):
+    #         print(f"Game over because player y-coordinate {self.rect.bottom} > {self.screen_height} and no platform beneath.")
+    #         self.reset()
+    #         return True, self.score
+    #     return False, self.score
     
-    def staying_still(self):
-        return self.initial_x == 0 and self.initial_y == 0
 
     def handle_movement(self, keys):
         if keys.get(pygame.K_a, False):
             self.rect.centerx -= self.vel
         if keys.get(pygame.K_d, False):
             self.rect.centerx += self.vel
-        if keys.get(pygame.K_w, False) or keys.get(pygame.K_UP, False):
-            if not self.is_jumping:
-                self.is_jumping = True
-                self.vel_y = -self.jump_vel
+        if (keys.get(pygame.K_w, False) or keys.get(pygame.K_UP, False)) and not self.is_jumping:
+            self.vel_y = self.jump_vel
+            self.is_jumping = True
 
     def apply_gravity(self, platforms):
-        self.rect.centery += self.vel_y  # Update self.rect.centery
+        self.rect.centery += self.vel_y
         self.vel_y += self.gravity
 
         on_platform = False
         for platform in platforms:
             if self.rect.colliderect(platform.rect) and self.vel_y >= 0:
                 on_platform = True
+                platform.on_platform = True
                 self.rect.bottom = platform.rect.top
                 self.vel_y = 0
                 self.is_jumping = False
@@ -117,6 +117,6 @@ class Player(pygame.sprite.Sprite):
             self.vel_y += self.gravity
 
     def jump(self, keys):
-        if (keys[pygame.K_w] or keys[pygame.K_UP]) and not self.is_jumping:
+        if (keys.get(pygame.K_w) or keys.get(pygame.K_UP)) and not self.is_jumping:
             self.vel_y = self.jump_vel
             self.is_jumping = True

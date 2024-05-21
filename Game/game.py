@@ -18,9 +18,7 @@ def run_game_instance(queues, num_agents):
         pygame.font.init()
         print("Pygame initialized in run_game_instance")
 
-        game_setup = GameSetup(num_agents)  # Assuming GameSetup can handle multiple agents
-        ai_integrations = [GameAIIntegrations(game_setup.agents[i], game_setup.replay_memory) for i in range(num_agents)]
-        training_loop = TrainingLoop(game_setup, ai_integrations, queues)
+        training_loop = TrainingLoop(num_agents, queues, verbose=False)
         training_loop.run_game()
     except Exception as e:
         print(f"Exception in game instance: {e}")
@@ -33,7 +31,7 @@ def main():
     pygame.font.init()
     print("Pygame initialized in main")
 
-    num_agents = 4  # Number of agents
+    num_agents = 8  # Number of agents
     screen_width, screen_height = 800, 900
 
     # Initialize the main screen
@@ -41,6 +39,7 @@ def main():
     pygame.display.set_caption("ClimbSmart Multi-Agent")
 
     queues = [multiprocessing.Queue() for _ in range(num_agents)]
+    clock = pygame.time.Clock()
 
     # Run a single game instance
     game_process = multiprocessing.Process(target=run_game_instance, args=(queues, num_agents))
@@ -48,20 +47,30 @@ def main():
 
     try:
         while game_process.is_alive():
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    game_process.terminate()
+                    game_process.join()
+                    pygame.quit()
+                    print("Pygame quit in main")
+                    sys.exit()
+
             for queue in queues:
                 if not queue.empty():
                     render_data = queue.get()
                     GraphicsHandler.render(screen, render_data)
 
-            pygame.display.flip()
-            pygame.time.delay(100)
+            pygame.display.flip()  # Ensure display is updated in the main process
+            clock.tick(60)  # Limit the frame rate to 60 FPS
     except KeyboardInterrupt:
         print("Interrupted by user.")
     finally:
+        print("Terminating game process...")
         game_process.terminate()
         game_process.join()
         pygame.quit()
         print("Pygame quit in main")
 
-if __name__ == "__main__":
+
+if __name__ == "__main__":  # python -m tensorboard.main --logdir=runs in terminal to see the tensorboard graph on http://localhost:6006/
     main()

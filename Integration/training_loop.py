@@ -1,25 +1,36 @@
 import torch
 import time
 import pygame
+from .game_ai_integrations import GameAIIntegrations
 from .game_setup import GameSetup
 from .utilities import handle_events
 
 class TrainingLoop:
-    def __init__(self, game_setup, ai_integrations, queues):
-        self.game_setup = game_setup
-        self.ai_integrations = ai_integrations
+    def __init__(self, num_agents, queues, verbose=False):
+        self.num_agents = num_agents
         self.queues = queues
+        self.verbose = verbose
         self.max_episode_duration = 10  # Maximum duration in seconds
         self.clock = pygame.time.Clock()  # Define a clock object
+        self.initialize_game()
+
+    def initialize_game(self):
+        self.game_setup = GameSetup(self.num_agents)
+        self.ai_integrations = [GameAIIntegrations(agent, self.game_setup.replay_memory) for agent in self.game_setup.agents]
+        self.game_setup.reset_players()
+        if self.verbose:
+            print(f"Game initialized with {self.num_agents} agents.")
 
     def run_game(self):
         episode = 1
         try:
             while self.game_setup.is_running:
+                print(f"Starting episode {episode}")
                 should_continue = self.run_episode(episode)
                 if not should_continue:
                     self.game_setup.is_running = False
                 else:
+                    self.initialize_game()  # Reset the game properly between episodes
                     episode += 1
         except Exception as e:
             print(f"Exception during game loop: {e}")
@@ -33,13 +44,13 @@ class TrainingLoop:
             print("Training loop terminated")
 
     def run_episode(self, episode):
-        self.game_setup.reset_players()
+        if self.verbose:
+            print(f"Starting episode {episode}")
         total_reward = 0
         self.start_time = time.time()
 
         while self.game_setup.is_running:
             handle_events(self.game_setup)
-
             for agent_id, ai_integration in enumerate(self.ai_integrations):
                 state = self.game_setup.get_state(agent_id)
                 action = ai_integration.select_action_and_update(state)
@@ -47,18 +58,14 @@ class TrainingLoop:
 
                 total_reward += reward
 
-                if done:
-                    print(f"Game over: Ending episode {episode} for agent {agent_id} with score {current_score}")
-                    self.game_setup.is_running = False
-                    break
-
                 ai_integration.writer.add_scalar('Reward', reward, episode)
 
             self.game_setup.update_platforms()
-            self.send_render_data(episode, total_reward)
+            self.update_display(episode, total_reward)
 
             if time.time() - self.start_time > self.max_episode_duration:
-                print(f"Episode {episode} ended due to exceeding maximum duration of {self.max_episode_duration} seconds.")
+                if self.verbose:
+                    print(f"Episode {episode} ended due to exceeding maximum duration of {self.max_episode_duration} seconds.")
                 self.game_setup.is_running = False  # Ensure it stops the loop
                 break
 
@@ -66,13 +73,14 @@ class TrainingLoop:
 
         for ai_integration in self.ai_integrations:
             ai_integration.writer.add_scalar('Total Reward', total_reward, episode)
-        print(f"Episode {episode} completed with total reward: {total_reward}")
+        if self.verbose:
+            print(f"Episode {episode} completed with total reward: {total_reward}")
         return self.game_setup.is_running
 
     def step(self, agent_id, action):
         action = action.item() if isinstance(action, torch.Tensor) else action
         keys = {pygame.K_a: False, pygame.K_d: False, pygame.K_w: False, pygame.K_UP: False}
-        action_map = {0: pygame.K_a, 1: pygame.K_d, 2: [pygame.K_w, pygame.K_UP]}
+        action_map = {0: pygame.K_a, 1: pygame.K_d, 2: pygame.K_w}
 
         mapped_keys = action_map.get(action, [])
         if isinstance(mapped_keys, list):
@@ -85,7 +93,10 @@ class TrainingLoop:
         on_platform = self.game_setup.check_on_platform(agent_id)
         next_state = self.game_setup.get_state(agent_id)
         reward = self.calculate_reward(agent_id, action, on_platform)
-        done, score = self.game_setup.check_game_over(agent_id)
+        done = False  # Always False
+        score = self.game_setup.players[agent_id].score
+        if self.verbose:
+            print(f"Agent {agent_id}, Action {action}, Reward {reward}, Done {done}, Score {score}")
 
         return next_state, reward, done, score
 
@@ -97,20 +108,15 @@ class TrainingLoop:
             if player.score > player.high_score:
                 player.high_score = player.score
                 reward += 100
-                print(f"New high score achieved by agent {agent_id}: {player.high_score}")
+                if self.verbose:
+                    print(f"New high score achieved by agent {agent_id}: {player.high_score}")
         elif action == 0 or action == 1:
-            reward == 0.1
+            reward = 0.1
         else:
-            reward == -0.05
+            reward = -0.05
         return reward
 
-    def send_render_data(self, episode, total_reward):
-        data = {
-            'players': [{'rect': p.rect, 'image': pygame.image.tostring(p.image, 'RGBA')} for p in self.game_setup.players],
-            'platforms': [{'rect': p.rect, 'image': pygame.image.tostring(p.image, 'RGBA')} for p in self.game_setup.platform_manager.platforms],
-            'score': sum(player.score for player in self.game_setup.players),  # Sum of all player scores
-            'episode': episode,
-            'total_reward': total_reward,
-        }
+    def update_display(self, episode, total_reward):
+        data = self.game_setup.get_render_data(episode, total_reward)
         for queue in self.queues:
             queue.put(data)
