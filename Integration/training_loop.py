@@ -10,7 +10,7 @@ class TrainingLoop:
         self.num_agents = num_agents
         self.queues = queues
         self.verbose = verbose
-        self.max_episode_duration = 10  # Maximum duration in seconds
+        self.max_episode_duration = 20  # Maximum duration in seconds
         self.clock = pygame.time.Clock()  # Define a clock object
         self.initialize_game()
 
@@ -22,7 +22,7 @@ class TrainingLoop:
         if self.verbose:
             print(f"Game initialized with {self.num_agents} agents.")
         
-        def load_replay_memory(self):
+    def load_replay_memory(self):
         self.game_setup.replay_memory.load_memory('replay_memory.pkl')
 
     def save_replay_memory(self):
@@ -83,6 +83,9 @@ class TrainingLoop:
             ai_integration.writer.add_scalar('Total Reward', total_reward, episode)
         if self.verbose:
             print(f"Episode {episode} completed with total reward: {total_reward}")
+
+        # Reset the game state to running for the next episode
+        self.game_setup.is_running = True
         return self.game_setup.is_running
 
     def step(self, agent_id, action):
