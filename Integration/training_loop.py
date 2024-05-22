@@ -18,8 +18,15 @@ class TrainingLoop:
         self.game_setup = GameSetup(self.num_agents)
         self.ai_integrations = [GameAIIntegrations(agent, self.game_setup.replay_memory) for agent in self.game_setup.agents]
         self.game_setup.reset_players()
+        self.load_replay_memory()
         if self.verbose:
             print(f"Game initialized with {self.num_agents} agents.")
+        
+        def load_replay_memory(self):
+        self.game_setup.replay_memory.load_memory('replay_memory.pkl')
+
+    def save_replay_memory(self):
+        self.game_setup.replay_memory.save_memory('replay_memory.pkl')
 
     def run_game(self):
         episode = 1
@@ -27,6 +34,7 @@ class TrainingLoop:
             while self.game_setup.is_running:
                 print(f"Starting episode {episode}")
                 should_continue = self.run_episode(episode)
+                self.save_replay_memory()
                 if not should_continue:
                     self.game_setup.is_running = False
                 else:
