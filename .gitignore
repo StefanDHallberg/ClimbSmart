@@ -123,6 +123,10 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
+#TensorBoard log directory
+# .runs
+runs/
+
 # Environments
 .env
 .venv
