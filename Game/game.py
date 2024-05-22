@@ -74,3 +74,5 @@ def main():
 
 if __name__ == "__main__":  # python -m tensorboard.main --logdir=runs in terminal to see the tensorboard graph on http://localhost:6006/
     main()
+
+# venv\Scripts\Activate.ps1 for activating the virtual environment in powershell
