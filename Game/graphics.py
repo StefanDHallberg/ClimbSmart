@@ -2,31 +2,31 @@ import pygame
 
 class GraphicsHandler:
     @staticmethod
-    def render(screen, player, platforms, camera_offset_y, episode, total_reward):
-        screen.fill((0, 0, 0))  # Fill the screen with black
+    def render(screen, data):
+        screen.fill((0, 0, 0))  # Clear the screen with black
 
-        # Loop over all platforms and draw them on the screen with the adjusted position
-        for platform in platforms:
-            adjusted_rect = platform.rect.move(0, camera_offset_y)
-            screen.blit(platform.image, adjusted_rect)
+        camera_offset_y = data.get('camera_offset_y', 0)
 
-        # Draw the player on the screen at the adjusted position
-        adjusted_player_rect = player.rect.move(0, camera_offset_y)
-        screen.blit(player.image, adjusted_player_rect)
+        # Drawing platforms
+        for platform in data['platforms']:
+            rect = pygame.Rect(platform['rect'])
+            rect = rect.move(0, camera_offset_y)  # Adjust for camera offset
+            image = pygame.image.fromstring(platform['image'], rect.size, 'RGBA')
+            screen.blit(image, rect)
 
-        # Render the player's score
-        score_font = pygame.font.Font(None, 36)
-        score_text = score_font.render("Score: " + str(player.score), True, (255, 0, 0))  # Render score text
-        screen.blit(score_text, (10, 10))  # Adjust position as needed
+        # Drawing players
+        for player in data['players']:
+            rect = pygame.Rect(player['rect'])
+            rect = rect.move(0, camera_offset_y)  # Adjust for camera offset
+            image = pygame.image.fromstring(player['image'], rect.size, 'RGBA')
+            screen.blit(image, rect)
 
-        # Render the episode number and the total reward
-        episode_font = pygame.font.Font(None, 36)
-        episode_text = episode_font.render("Episode: " + str(episode), True, (255, 0, 0))  # Render episode text
-        screen.blit(episode_text, (10, 50))  # Adjust position as needed
+        if pygame.font.get_init():  # Check if the font module is initialized
+            score_font = pygame.font.Font(None, 36)
+            score_text = score_font.render(f"Score: {data['score']}", True, (255, 0, 0))
+            screen.blit(score_text, (10, 10))
 
-        reward_font = pygame.font.Font(None, 36)
-        reward_text = reward_font.render("Total reward: " + str(total_reward), True, (255, 0, 0))  # Render reward text
-        screen.blit(reward_text, (10, 90))  # Adjust position as needed
+            episode_text = score_font.render(f"Episode: {data['episode']}", True, (255, 0, 0))
+            screen.blit(episode_text, (10, 50))
 
-        # Update the display
-        pygame.display.flip()
+        pygame.display.flip()  # Update the display
