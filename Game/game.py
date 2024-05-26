@@ -2,6 +2,7 @@ import sys
 import os
 import pygame
 import multiprocessing
+import asyncio
 
 # Get the directory of the script
 script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -9,29 +10,35 @@ script_dir = os.path.dirname(os.path.realpath(__file__))
 parent_dir = os.path.abspath(os.path.join(script_dir, os.pardir))
 sys.path.append(parent_dir)
 
-from Integration import GameSetup, GameAIIntegrations, TrainingLoop
+from Integration import TrainingLoop
 from Game.graphics import GraphicsHandler
 
-def run_game_instance(queues, num_agents):
+async def run_game_instance(queues, num_agents):
     try:
         pygame.init()
         pygame.font.init()
         print("Pygame initialized in run_game_instance")
 
         training_loop = TrainingLoop(num_agents, queues, verbose=False)
-        training_loop.run_game()
+        print("Starting training loop...")
+        await training_loop.run_game()
+        print("Training loop completed.")
     except Exception as e:
         print(f"Exception in game instance: {e}")
     finally:
         pygame.quit()
         print("Pygame quit in run_game_instance")
 
+def run_game_instance_process(queues, num_agents):
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run_game_instance(queues, num_agents))
+
 def main():
     pygame.init()
     pygame.font.init()
     print("Pygame initialized in main")
 
-    num_agents = 8  # Number of agents
+    num_agents = 16  # Number of agents
     screen_width, screen_height = 800, 900
 
     # Initialize the main screen
@@ -42,7 +49,8 @@ def main():
     clock = pygame.time.Clock()
 
     # Run a single game instance
-    game_process = multiprocessing.Process(target=run_game_instance, args=(queues, num_agents))
+    print("Starting game process...")
+    game_process = multiprocessing.Process(target=run_game_instance_process, args=(queues, num_agents))
     game_process.start()
 
     try:
@@ -71,8 +79,5 @@ def main():
         pygame.quit()
         print("Pygame quit in main")
 
-
-if __name__ == "__main__":  # python -m tensorboard.main --logdir=runs in terminal to see the tensorboard graph on http://localhost:6006/
+if __name__ == "__main__":
     main()
-
-# venv\Scripts\Activate.ps1 for activating the virtual environment in powershell

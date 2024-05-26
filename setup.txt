@@ -1,0 +1,13 @@
+###############################################################
+pip freeze > requirements.txt       # install requirements.txt
+###############################################################
+
+# activate venv
+.\venv\Scripts\activate
+venv\Scripts\activate.bat
+deactivate                          # to deactivate again.
+
+####################(To run tensorboard (Visualize training graph.))###############
+
+tensorboard --logdir=path/to/your/project/runs
+##################################################################################
