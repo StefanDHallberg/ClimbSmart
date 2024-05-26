@@ -1,5 +1,6 @@
 import pygame
 import torch
+import asyncio
 from ML.memory import ReplayMemory
 from ML.agent import Agent
 from Game.platforms import PlatformManager
@@ -16,15 +17,38 @@ class GameSetup:
         self.platform_manager = PlatformManager(self.screen_width, self.screen_height)
         self.agents = [Agent(input_size=10, output_size=3) for _ in range(num_agents)]
         self.replay_memory = ReplayMemory(10000)
+        
         print(f"Initialized GameSetup with {num_agents} agents")
+        self.loop = asyncio.get_event_loop()
+        self.camera_task = self.loop.create_task(self.async_update_camera())
+
+    async def async_update_camera(self):
+        while self.is_running:
+            self.update_camera()
+            await asyncio.sleep(0.015)  # Update approximately every frame (60 FPS)
+    
+    async def reset_game(self):
+        if self.camera_task:
+            self.camera_task.cancel()  # Cancel the ongoing camera update task
+        self.reset_players()
+        self.reset_platform_manager()
+        self.camera_offset_y = 0  # Reset the camera offset immediately
+        self.is_running = True
+        self.camera_task = self.loop.create_task(self.async_update_camera())  # Restart the camera update task
+        
+        print("Game reset complete.")
 
     def reset_players(self):
         for player in self.players:
             player.reset()
         print("Players reset")
 
+    def reset_platform_manager(self):
+        self.platform_manager = PlatformManager(self.screen_width, self.screen_height)
+        print("Platform manager reset")
+
     def get_highest_player_y(self):
-        return min(player.rect.top for player in self.players)  # Use rect.top instead of rect.centery for more accuracy
+        return min(player.rect.top for player in self.players)
 
     def update_camera(self):
         highest_y = self.get_highest_player_y()
@@ -59,7 +83,7 @@ class GameSetup:
             self.platform_manager.update(player)
 
     def get_render_data(self, episode, total_reward):
-        self.update_camera()  # Update the camera position
+        self.update_camera()  # Ensure camera is updated immediately
         data = {
             'players': [{'rect': p.rect, 'image': pygame.image.tostring(p.image, 'RGBA')} for p in self.players],
             'platforms': [{'rect': p.rect, 'image': pygame.image.tostring(p.image, 'RGBA')} for p in self.platform_manager.platforms],

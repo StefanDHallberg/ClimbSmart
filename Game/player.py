@@ -78,18 +78,6 @@ class Player(pygame.sprite.Sprite):
                 return True
         return False
 
-    # def is_game_over(self, platforms):
-    #     if self.rect.top > self.screen_height:
-    #         print(f"Game over because player y-coordinate {self.rect.top} > {self.screen_height}")
-    #         self.reset()
-    #         return True, self.score
-    #     if self.rect.bottom > self.screen_height and not any(platform.rect.colliderect(self.rect) for platform in platforms):
-    #         print(f"Game over because player y-coordinate {self.rect.bottom} > {self.screen_height} and no platform beneath.")
-    #         self.reset()
-    #         return True, self.score
-    #     return False, self.score
-    
-
     def handle_movement(self, keys):
         if keys.get(pygame.K_a, False):
             self.rect.centerx -= self.vel

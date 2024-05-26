@@ -31,13 +31,13 @@ class PlatformManager:
     def update(self, player):
         platform_height = player.height  # Get the height from the player object
         # Generate platforms continuously
-        while len(self.platforms) < 22:
+        while len(self.platforms) < 350:
             last_platform = self.platforms.sprites()[-1]
             platform_width = random.randint(24, 50)
             platform_centerx = random.randint(platform_width // 2, self.screen_width - platform_width // 2)
             
             # Ensure the next platform is not too far from the last one
-            min_distance = 75
+            min_distance = 70
             while abs(platform_centerx - last_platform.rect.centerx) < min_distance:
                 platform_centerx = random.randint(platform_width // 2, self.screen_width - platform_width // 2)
 
