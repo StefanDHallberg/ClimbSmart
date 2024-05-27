@@ -40,6 +40,15 @@ class Player(pygame.sprite.Sprite):
                     self.update_score(platform.rect.centery)
                     platform.on_platform = True
 
+
+    def check_collisions(self, platforms):
+        for platform in platforms:
+            if self.rect.colliderect(platform.rect):
+                if self.vel_y > 0:
+                    self.rect.bottom = platform.rect.top
+                    self.vel_y = 0
+                    self.is_jumping = False
+
     def update_score(self, platform_y=None):
         current_y = self.rect.bottom if platform_y is None else platform_y
         climbed_distance = self.highest_y - current_y
@@ -59,8 +68,6 @@ class Player(pygame.sprite.Sprite):
         self.rect.centery = self.initial_y
         self.vel_y = 0
         self.is_jumping = False
-        self.reached_high_score = False
-        # self.camera_offset_y = 0
 
     def update(self, keys, platforms):
         self.handle_movement(keys)
@@ -103,6 +110,7 @@ class Player(pygame.sprite.Sprite):
 
         if not on_platform:
             self.vel_y += self.gravity
+
 
     def jump(self, keys):
         if (keys.get(pygame.K_w) or keys.get(pygame.K_UP)) and not self.is_jumping:

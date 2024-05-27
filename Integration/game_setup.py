@@ -22,6 +22,21 @@ class GameSetup:
         self.loop = asyncio.get_event_loop()
         self.camera_task = self.loop.create_task(self.async_update_camera())
 
+        # Ensure initial platforms and players are set up correctly
+        self.initialize_platforms()
+        self.initialize_players()
+
+    def initialize_platforms(self):
+        self.platform_manager.generate_bottom_platform()
+        self.platform_manager.generate_additional_platforms()  # Ensure additional platforms are generated
+
+    def initialize_players(self):
+        for player in self.players:
+            player.rect.x = self.screen_width // 2
+            player.rect.y = self.screen_height - 100  # Position just above the bottom
+            player.vel_y = 0
+            player.is_jumping = False
+
     async def async_update_camera(self):
         while self.is_running:
             self.update_camera()
@@ -45,6 +60,7 @@ class GameSetup:
 
     def reset_platform_manager(self):
         self.platform_manager = PlatformManager(self.screen_width, self.screen_height)
+        self.initialize_platforms()
         print("Platform manager reset")
 
     def get_highest_player_y(self):
