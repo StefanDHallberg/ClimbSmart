@@ -28,6 +28,23 @@ class PlatformManager:
         bottom_platform = Platform(platform_centerx, platform_centery, platform_width, platform_height)
         self.platforms.add(bottom_platform)
 
+    def generate_additional_platforms(self):
+        platform_height = 18  # Define the height of the platform
+        while len(self.platforms) < 350:
+            last_platform = self.platforms.sprites()[-1]
+            platform_width = random.randint(24, 50)
+            platform_centerx = random.randint(platform_width // 2, self.screen_width - platform_width // 2)
+            
+            # Ensure the next platform is not too far from the last one
+            min_distance = 65
+            while abs(platform_centerx - last_platform.rect.centerx) < min_distance:
+                platform_centerx = random.randint(platform_width // 2, self.screen_width - platform_width // 2)
+
+            # Adjust platform_centery to make platforms closer
+            platform_centery = last_platform.rect.centery - random.randint(60, 70)  # Adjust these values as needed, based on the desired platform spacing and height.
+            new_platform = Platform(platform_centerx, platform_centery, platform_width, platform_height)
+            self.platforms.add(new_platform)
+            
     def update(self, player):
         platform_height = player.height  # Get the height from the player object
         # Generate platforms continuously
@@ -37,7 +54,7 @@ class PlatformManager:
             platform_centerx = random.randint(platform_width // 2, self.screen_width - platform_width // 2)
             
             # Ensure the next platform is not too far from the last one
-            min_distance = 70
+            min_distance = 65
             while abs(platform_centerx - last_platform.rect.centerx) < min_distance:
                 platform_centerx = random.randint(platform_width // 2, self.screen_width - platform_width // 2)
 
