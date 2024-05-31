@@ -3,5 +3,4 @@
 from .game_setup import GameSetup
 from .game_ai_integrations import GameAIIntegrations
 from .training_loop import TrainingLoop
-from .evaluation import Evaluation
 from .utilities import handle_events, update_display
