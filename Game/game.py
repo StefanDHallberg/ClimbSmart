@@ -30,8 +30,7 @@ async def run_game_instance(queues, num_agents):
         print("Pygame quit in run_game_instance")
 
 def run_game_instance_process(queues, num_agents):
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(run_game_instance(queues, num_agents))
+    asyncio.run(run_game_instance(queues, num_agents))
 
 def main():
     pygame.init()

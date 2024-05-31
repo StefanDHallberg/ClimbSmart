@@ -49,6 +49,3 @@ class ReplayMemory:
         with self.lock:
             self.memory.clear()
             print("Cleared replay memory")
-
-# Define the replay memory
-# replay_memory = ReplayMemory(capacity=10000)

@@ -10,3 +10,6 @@ class GameAIIntegrations:
         action = self.agent.select_action(state)
         self.agent.update_epsilon()
         return action
+
+    def log_data(self, tag, value, step):
+        self.writer.add_scalar(tag, value, step)

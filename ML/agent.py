@@ -10,24 +10,31 @@ from .memory import ReplayMemory
 Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
 class Agent:
-    def __init__(self, input_size, output_size, lr=0.001, gamma=0.99, batch_size=64, capacity=10000,
-                 epsilon_start=1.0, epsilon_final=0.01, epsilon_decay=0.999):
-        self.dqn = DQN(input_size, output_size)
+    def __init__(self, input_channels, num_actions, lr=0.001, gamma=0.99, batch_size=64, capacity=10000,
+                 epsilon_start=1.0, epsilon_final=0.01, epsilon_decay=0.999, verbose=False):
+        self.dqn = DQN(input_channels, num_actions)
         self.memory = ReplayMemory(capacity)
         self.optimizer = optim.Adam(self.dqn.parameters(), lr=lr)
         self.gamma = gamma
         self.batch_size = batch_size
-        self.num_actions = output_size
+        self.num_actions = num_actions
         self.epsilon = epsilon_start
         self.epsilon_final = epsilon_final
         self.epsilon_decay = epsilon_decay
+        self.verbose = verbose
 
     def select_action(self, state):
         if random.random() > self.epsilon:
             with torch.no_grad():
-                return self.dqn(state).max(1)[1].view(1, 1)
+                action = self.dqn(state).max(1)[1].view(1, 1)
+                if self.verbose:
+                    print(f"Selected action (exploitation): {action}")
+                return action
         else:
-            return torch.tensor([[random.randrange(self.num_actions)]], dtype=torch.long)
+            action = torch.tensor([[random.randrange(self.num_actions)]], dtype=torch.long)
+            if self.verbose:
+                print(f"Selected action (exploration): {action}")
+            return action
 
     def update_epsilon(self):
         self.epsilon = max(self.epsilon_final, self.epsilon * self.epsilon_decay)
@@ -46,22 +53,19 @@ class Agent:
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
 
-        # Forward pass through the DQN model
-        state_action_values = self.dqn(state_batch)
+        state_action_values = self.dqn(state_batch).gather(1, action_batch)
 
-        # Select the Q-values for the actions taken
-        state_action_values = state_action_values.gather(1, action_batch)
+        next_state_values = torch.zeros(self.batch_size, device=self.dqn.fc1.weight.device)
+        if non_final_next_states.size(0) > 0:
+            next_q_values = self.dqn(non_final_next_states).max(1)[0].detach()
+            next_state_values[non_final_mask] = next_q_values
 
-        # Compute expected state-action values
-        next_state_values = torch.zeros(self.batch_size)
-        next_state_values[non_final_mask] = self.dqn(non_final_next_states).max(1)[0].detach()
+        expected_state_action_values = (next_state_values * self.gamma) + reward_batch.view(-1)
+        expected_state_action_values = expected_state_action_values.view(self.batch_size, 1)
 
-        expected_state_action_values = (next_state_values * self.gamma) + reward_batch
-
-        # Compute loss using smooth L1 loss
-        loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1).float())
-
-        # Perform backpropagation and optimization step
+        loss = F.smooth_l1_loss(state_action_values, expected_state_action_values)
+        if self.verbose:
+            print(f"Loss: {loss.item()}")
         self.optimizer.zero_grad()
         loss.backward()
         for param in self.dqn.parameters():
