@@ -1,13 +1,26 @@
+python -m venv venv         # Creating the Virtual Environment:
 ###############################################################
-pip freeze > requirements.txt       # install requirements.txt
+pip install -r requirements.txt     # Installing Requirements:
+###############################################################
+pip freeze > requirements.txt       # Updating requirements.txt:
 ###############################################################
 
-# activate venv
-.\venv\Scripts\activate
+# Create the virtual environment
+python -m venv venv
+
+# Activate the Virtual Environment in ## Command prompt ##
 venv\Scripts\activate.bat
-deactivate                          # to deactivate again.
 
-####################(To run tensorboard (Visualize training graph.))###############
+    ### PowerShell ### Activate the virtual environment For 
+    .\venv\Scripts\Activate
 
+# Install the requirements
+pip install -r requirements.txt
+     # For updating requirements.txt:
+        pip freeze > requirements.txt
+
+# Run TensorBoard
 tensorboard --logdir=path/to/your/project/runs
-##################################################################################
+
+# Deactivate the virtual environment when done
+deactivate
