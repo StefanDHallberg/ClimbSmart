@@ -5,6 +5,9 @@ pip install -r requirements.txt     # Installing Requirements:
 pip freeze > requirements.txt       # Updating requirements.txt:
 ###############################################################
 
+# Change the execution policy temporarily
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+
 # Create the virtual environment
 python -m venv venv
 

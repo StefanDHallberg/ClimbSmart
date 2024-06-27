@@ -16,4 +16,4 @@ def update_display(game_setup, episode, total_reward):
     GraphicsHandler.render(game_setup.screen, game_setup.player, game_setup.platform_manager.platforms, 
                            game_setup.camera_offset_y, episode, total_reward)
     pygame.display.flip() # Refresh the screen display
-    # game_setup.clock.tick(60)  # Maintaining a consistent frame rate
+
