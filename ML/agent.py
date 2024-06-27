@@ -39,7 +39,7 @@ class Agent:
     def update_epsilon(self):
         self.epsilon = max(self.epsilon_final, self.epsilon * self.epsilon_decay)
 
-    def optimize_model(self, experiences):
+    def optimize_model(self):
         if len(self.memory) < self.batch_size:
             return
         

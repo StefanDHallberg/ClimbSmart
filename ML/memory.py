@@ -1,29 +1,31 @@
-import collections
+from collections import namedtuple, deque
 import os
 import random
 import pickle
-import threading
+
+# Defining the Transition namedtuple
+Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'done'))
 
 class ReplayMemory:
     def __init__(self, capacity):
         self.capacity = capacity
-        self.memory = collections.deque(maxlen=capacity)
-        self.lock = threading.Lock()
+        self.memory = deque(maxlen=capacity)
 
-    def push(self, transition):
-        with self.lock:
-            self.memory.append(transition)
+    # def push(self, transition):
+    #         self.memory.append(transition)
+    def push(self, *args):
+        """Save a transition"""
+        self.memory.append(Transition(*args))
 
     def sample(self, batch_size):
-        with self.lock:
             return random.sample(self.memory, batch_size)
 
     def __len__(self):
-        with self.lock:
             return len(self.memory)
 
+
     def save_memory(self, filename):
-        with self.lock:
+        
             try:
                 with open(filename, 'wb') as f:
                     pickle.dump(self.memory, f)
@@ -33,7 +35,7 @@ class ReplayMemory:
 
     def load_memory(self, filename):
         if os.path.exists(filename) and os.path.getsize(filename) > 0:
-            with self.lock:
+            
                 try:
                     with open(filename, 'rb') as f:
                         self.memory = pickle.load(f)
@@ -46,6 +48,5 @@ class ReplayMemory:
             print(f"File '{filename}' does not exist or is empty.")
 
     def clear(self):
-        with self.lock:
             self.memory.clear()
             print("Cleared replay memory")
