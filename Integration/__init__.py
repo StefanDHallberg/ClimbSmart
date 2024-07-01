@@ -3,4 +3,4 @@
 # from .game_setup import GameSetup
 from .game_ai_integrations import GameAIIntegrations
 from .training_game import TrainingGame
-from .utilities import handle_events, update_display
+from .utilities import handle_events, update_display, pygame_lock
