@@ -1,26 +1,22 @@
-import torch
 import time
-import asyncio
 import pygame
+import torch
 from ML.memory import ReplayMemory
 from ML.agent import Agent
 from Game.platforms import PlatformManager
 from Game.player import Player
 from Integration.utilities import handle_events
 from Integration.game_ai_integrations import GameAIIntegrations
-from memory_profiler import profile
 
 class TrainingGame:
-    def __init__(self, num_agents, screen_width, screen_height, queues, verbose=False):
-        pygame.init()
+    def __init__(self, num_agents, screen_width, screen_height, queues, stop_event, verbose=False):
         self.num_agents = num_agents
         self.queues = queues
         self.verbose = verbose
         self.max_episode_duration = 15
         self.episode = 1
-        self.terminate_immediately = False
+        self.stop_event = stop_event
 
-        self.is_running = True
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.players = [Player(self.screen_width // 2, self.screen_height - 20, self.screen_width, self.screen_height) for _ in range(num_agents)]
@@ -44,34 +40,32 @@ class TrainingGame:
             self.state_tensor.copy_(states)
         return self.state_tensor
 
-    async def run_game(self):
+    def run_game(self):
         try:
-            while not self.terminate_immediately:
+            while not self.stop_event.is_set():
                 if self.verbose:
                     print(f"Starting episode {self.episode}")
                 total_reward = 0
                 self.start_time = time.time()
-                self.is_running = True
 
                 try:
-                    while self.is_running and not self.terminate_immediately:
+                    while not self.stop_event.is_set():
                         if time.time() - self.start_time > self.max_episode_duration:
                             if self.verbose:
                                 print("Episode duration exceeded the maximum limit.")
-                            self.is_running = False
                             break
 
                         handle_events(self)
 
                         states = self.get_states()
-                        total_rewards = await self.update_agents(self.episode, states)
+                        total_rewards = self.update_agents(self.episode, states)
                         total_reward += sum(total_rewards)
                         self.update_platforms()
-                        await self.update_display(self.episode, total_reward)
+                        self.update_display(self.episode, total_reward)
 
-                        await asyncio.sleep(0.016)
+                        time.sleep(0.016)
 
-                    if not self.terminate_immediately:
+                    if not self.stop_event.is_set():
                         for ai_integration in self.ai_integrations:
                             if ai_integration:
                                 ai_integration.writer.add_scalar('Total Reward', total_reward, self.episode)
@@ -82,48 +76,38 @@ class TrainingGame:
 
                 except Exception as e:
                     print(f"Exception during episode: {e}")
-                    self.is_running = False
-                    self.terminate_immediately = True
+                    self.stop_event.set()
 
-                await self.cleanup()
+                self.cleanup()
                 self.episode += 1
+                self.reset_game_state()
 
         except KeyboardInterrupt:
             print("Training loop interrupted by user")
+            self.stop_event.set()
 
-        await self.cleanup()
+        finally:
+            self.cleanup()
 
-    async def update_agents(self, episode, states):
+    def update_agents(self, episode, states):
         try:
             total_rewards = []
             for agent_id, ai_integration in enumerate(self.ai_integrations):
                 if self.verbose:
                     print(f"Agent {agent_id} state: {states[agent_id].shape}")
 
-                start_time = time.time()
                 action = ai_integration.select_action_and_update(states[agent_id])
                 if self.verbose:
-                    print(f"Time taken to select action for agent {agent_id}: {time.time() - start_time}s")
+                    print(f"Selected action for agent {agent_id}: {action}")
 
-                if self.verbose:
-                    print(f"Action before update_players: {action}, type: {type(action)}")
                 action = action.item() if isinstance(action, torch.Tensor) else action
-                if self.verbose:
-                    print(f"Action after conversion: {action}, type: {type(action)}")
-
-                start_time = time.time()
                 self.update_players(agent_id, action)
-                if self.verbose:
-                    print(f"Time taken to update player for agent {agent_id}: {time.time() - start_time}s")
 
                 next_state = self.get_states()[agent_id]
                 reward = self.calculate_reward(agent_id, action, self.check_on_platform(agent_id))
                 done = False
 
-                start_time = time.time()
                 ai_integration.replay_memory.push([states[agent_id]], [action], [reward], [next_state], [done])
-                if self.verbose:
-                    print(f"Time taken to push to replay memory for agent {agent_id}: {time.time() - start_time}s")
 
                 ai_integration.log_data('Total Reward', reward, episode)
                 total_rewards.append(reward)
@@ -132,20 +116,21 @@ class TrainingGame:
             print(f"Exception in update_agent: {e}")
             raise
 
-    async def cleanup(self):
-        if not self.terminate_immediately:
-            await self.flush_queues()
-        for ai_integration in self.ai_integrations:
-            try:
-                if ai_integration:
-                    ai_integration.writer.close()
-            except Exception as e:
-                print(f"Exception closing writer: {e}")
-        self.is_running = False
-        if self.verbose:
-            print("Training loop terminated")
-
-        pygame.quit()
+    def cleanup(self):
+        try:
+            self.flush_queues()
+            for ai_integration in self.ai_integrations:
+                try:
+                    if ai_integration:
+                        ai_integration.writer.close()
+                except Exception as e:
+                    print(f"Exception closing writer: {e}")
+            if self.verbose:
+                print("Training loop terminated")
+        except Exception as e:
+            print(f"Exception during cleanup: {e}")
+        finally:
+            print("Clean up in TrainingGame")
 
     def initialize_platforms(self):
         self.platform_manager.generate_bottom_platform()
@@ -158,10 +143,9 @@ class TrainingGame:
             player.vel_y = 0
             player.is_jumping = False
 
-    async def reset_game(self):
+    def reset_game(self):
         self.reset_players()
         self.reset_platform_manager()
-        self.is_running = True
         if self.verbose:
             print("Game reset complete.")
 
@@ -201,20 +185,13 @@ class TrainingGame:
             self.platform_manager.update(player)
 
     def get_render_data(self, episode, total_reward):
-        if not self.is_running:
-            return {}
-
         players_data = []
         platforms_data = []
 
         for p in self.players:
-            if not self.is_running:
-                return {}
             players_data.append({'rect': p.rect, 'image': pygame.image.tostring(p.image, 'RGBA')})
 
         for p in self.platform_manager.platforms:
-            if not self.is_running:
-                return {}
             platforms_data.append({'rect': p.rect, 'image': pygame.image.tostring(p.image, 'RGBA')})
 
         data = {
@@ -227,11 +204,10 @@ class TrainingGame:
         return data
 
     def terminate_game_loop(self):
-        self.is_running = False
-        self.terminate_immediately = True
+        self.stop_event.set()
 
-    async def update_display(self, episode, total_reward):
-        if self.terminate_immediately:
+    def update_display(self, episode, total_reward):
+        if self.stop_event.is_set():
             return
         data = self.get_render_data(episode, total_reward)
         if not data:
@@ -240,20 +216,43 @@ class TrainingGame:
             if not queue.full():
                 queue.put_nowait(data)
 
-    async def flush_queues(self):
+    def flush_queues(self):
         for queue in self.queues:
             while not queue.empty():
                 queue.get_nowait()
 
-    async def reset_game_state(self):
+    def reset_game_state(self):
         if self.verbose:
             print("Resetting game state...")
         self.update_display(self.episode, 0)
-        await self.reset_game()
-        self.ai_integrations = [GameAIIntegrations(agent, self.replay_memory) for agent in self.agents]
-        await self.update_display(self.episode, 0)
+        self.reset_game()
+        self.ai_integrations = [GameAIIntegrations(agent, ReplayMemory(10000)) for agent in self.agents]
+        self.update_display(self.episode, 0)
         if self.verbose:
             print("Game state reset complete.")
+
+
+    def step(self, agent_id, action):
+        action = action.item() if isinstance(action, torch.Tensor) else action
+        keys = {pygame.K_a: False, pygame.K_d: False, pygame.K_w: False, pygame.K_UP: False}
+        action_map = {0: pygame.K_a, 1: pygame.K_d, 2: pygame.K_w}
+
+        if action in action_map:
+            keys[action_map[action]] = True
+
+        if self.verbose:
+            print(f"Step action: {action}, keys: {keys}")
+
+        self.update_players(agent_id, keys)
+        on_platform = self.check_on_platform(agent_id)
+        next_state = self.get_state(agent_id)
+        reward = self.calculate_reward(agent_id, action, on_platform)
+        done = False
+        score = self.players[agent_id].score
+        if self.verbose:
+            print(f"Agent {agent_id}, Action {action}, Reward {reward}, Done {done}, Score {score}")
+
+        return next_state, reward, done, score
 
     def calculate_reward(self, agent_id, action, on_platform):
         reward = 0

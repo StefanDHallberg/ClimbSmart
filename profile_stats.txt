@@ -1,0 +1,200 @@
+         802350 function calls (802344 primitive calls) in 34.361 seconds
+
+   Ordered by: cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000   34.361   34.361 c:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\Game\game.py:40(main)
+        1    0.078    0.078   33.056   33.056 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\Game\rendering.py:15(render)
+     2000   29.553    0.015   29.553    0.015 {method 'tick' of 'pygame.time.Clock' objects}
+      494    0.032    0.000    2.313    0.005 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\Game\rendering.py:33(_render_frame)
+      494    0.461    0.001    2.225    0.005 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\Game\graphics.py:4(render)
+     2494    1.270    0.001    1.270    0.001 {built-in method pygame.display.flip}
+      506    0.963    0.002    0.963    0.002 {method 'acquire' of '_thread.lock' objects}
+        2    0.000    0.000    0.962    0.481 C:\Python311\Lib\threading.py:1080(join)
+        2    0.000    0.000    0.962    0.481 C:\Python311\Lib\threading.py:1118(_wait_for_tstate_lock)
+      988    0.557    0.001    0.557    0.001 {method 'render' of 'pygame.font.Font' objects}
+   173480    0.406    0.000    0.406    0.000 {method 'blit' of 'pygame.surface.Surface' objects}
+      495    0.002    0.000    0.287    0.001 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pygame\pkgdata.py:45(getResource)
+        1    0.231    0.231    0.234    0.234 {built-in method pygame.base.init}
+   172492    0.189    0.000    0.189    0.000 {built-in method pygame.image.fromstring}
+      990    0.005    0.000    0.173    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pkg_resources\__init__.py:370(get_provider)
+      990    0.003    0.000    0.161    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pkg_resources\__init__.py:1650(__init__)
+      495    0.002    0.000    0.153    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pkg_resources\__init__.py:1160(resource_exists)
+      990    0.002    0.000    0.138    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pkg_resources\__init__.py:1654(_setup_prefix)
+      990    0.006    0.000    0.136    0.000 {built-in method builtins.next}
+      495    0.001    0.000    0.132    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pkg_resources\__init__.py:1174(resource_stream)
+      988    0.109    0.000    0.109    0.000 {method 'fill' of 'pygame.surface.Surface' objects}
+    10890    0.053    0.000    0.102    0.000 <frozen ntpath>:208(split)
+    10890    0.010    0.000    0.097    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pkg_resources\__init__.py:1636(_parents)
+      495    0.001    0.000    0.059    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pkg_resources\__init__.py:1458(has_resource)
+        1    0.000    0.000    0.057    0.057 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\Game\rendering.py:8(__init__)
+        1    0.056    0.056    0.057    0.057 {built-in method pygame.display.set_mode}
+        1    0.051    0.051    0.051    0.051 {built-in method pygame.base.quit}
+      495    0.001    0.000    0.051    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pkg_resources\__init__.py:1679(get_resource_stream)
+      495    0.001    0.000    0.044    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pkg_resources\__init__.py:1670(_has)
+      495    0.001    0.000    0.043    0.000 <frozen genericpath>:16(exists)
+      500    0.043    0.000    0.043    0.000 {built-in method nt.stat}
+   172492    0.041    0.000    0.041    0.000 {method 'move' of 'pygame.rect.Rect' objects}
+    12870    0.031    0.000    0.041    0.000 <frozen ntpath>:154(splitdrive)
+     2000    0.040    0.000    0.040    0.000 {built-in method pygame.event.get}
+      495    0.038    0.000    0.038    0.000 {built-in method io.open}
+     9900    0.009    0.000    0.033    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pkg_resources\__init__.py:2391(_is_egg_path)
+      990    0.004    0.000    0.025    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pkg_resources\__init__.py:1544(_fn)
+     4000    0.011    0.000    0.020    0.000 C:\Python311\Lib\queue.py:97(empty)
+      990    0.003    0.000    0.020    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pkg_resources\__init__.py:1445(__init__)
+      990    0.001    0.000    0.016    0.000 <frozen ntpath>:249(dirname)
+     9900    0.008    0.000    0.013    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pkg_resources\__init__.py:2398(_is_zip_egg)
+     9900    0.007    0.000    0.011    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pkg_resources\__init__.py:2406(_is_unpacked_egg)
+      990    0.004    0.000    0.011    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pkg_resources\__init__.py:1550(_validate_resource_path)
+      990    0.004    0.000    0.010    0.000 <frozen ntpath>:107(join)
+     4494    0.005    0.000    0.008    0.000 C:\Python311\Lib\queue.py:209(_qsize)
+      494    0.003    0.000    0.008    0.000 C:\Python311\Lib\queue.py:154(get)
+    10890    0.005    0.000    0.007    0.000 <frozen ntpath>:35(_get_bothseps)
+    28274    0.007    0.000    0.007    0.000 {built-in method builtins.len}
+      990    0.004    0.000    0.006    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pkg_resources\__init__.py:3181(_find_adapter)
+    19827    0.005    0.000    0.005    0.000 {method 'endswith' of 'str' objects}
+    27724    0.005    0.000    0.005    0.000 {built-in method builtins.isinstance}
+    26734    0.004    0.000    0.004    0.000 {built-in method nt.fspath}
+     6503    0.004    0.000    0.004    0.000 {method '__exit__' of '_thread.lock' objects}
+    19800    0.004    0.000    0.004    0.000 {method 'lower' of 'str' objects}
+      990    0.002    0.000    0.003    0.000 <frozen ntpath>:87(isabs)
+    13862    0.003    0.000    0.003    0.000 {method 'replace' of 'str' objects}
+    10910    0.003    0.000    0.003    0.000 {method 'rstrip' of 'str' objects}
+      990    0.002    0.000    0.003    0.000 <frozen posixpath>:60(isabs)
+     2004    0.003    0.000    0.003    0.000 C:\Python311\Lib\threading.py:568(is_set)
+      2/1    0.000    0.000    0.002    0.002 <frozen importlib._bootstrap>:1165(_find_and_load)
+      2/1    0.000    0.000    0.002    0.002 <frozen importlib._bootstrap>:1120(_find_and_load_unlocked)
+      2/1    0.000    0.000    0.002    0.002 <frozen importlib._bootstrap>:666(_load_unlocked)
+        1    0.000    0.000    0.002    0.002 <frozen importlib._bootstrap_external>:934(exec_module)
+      496    0.001    0.000    0.002    0.000 C:\Python311\Lib\threading.py:359(notify)
+      5/2    0.000    0.000    0.001    0.001 <frozen importlib._bootstrap>:233(_call_with_frames_removed)
+        1    0.000    0.000    0.001    0.001 {built-in method builtins.exec}
+        1    0.000    0.000    0.001    0.001 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pygame\freetype.py:1(<module>)
+     3972    0.001    0.000    0.001    0.000 {built-in method builtins.getattr}
+     3978    0.001    0.000    0.001    0.000 {method 'startswith' of 'str' objects}
+        2    0.000    0.000    0.001    0.001 <frozen importlib._bootstrap>:566(module_from_spec)
+        1    0.000    0.000    0.001    0.001 <frozen importlib._bootstrap_external>:1231(create_module)
+        1    0.001    0.001    0.001    0.001 {built-in method _imp.create_dynamic}
+        2    0.000    0.000    0.001    0.000 C:\Python311\Lib\threading.py:938(start)
+      498    0.001    0.000    0.001    0.000 C:\Python311\Lib\threading.py:279(_is_owned)
+      990    0.001    0.000    0.001    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\pkg_resources\__init__.py:3171(_always_object)
+      498    0.001    0.000    0.001    0.000 C:\Python311\Lib\threading.py:264(__enter__)
+      494    0.001    0.000    0.001    0.000 C:\Python311\Lib\queue.py:217(_get)
+        2    0.000    0.000    0.001    0.000 C:\Python311\Lib\threading.py:604(wait)
+     1980    0.001    0.000    0.001    0.000 {method 'split' of 'str' objects}
+        2    0.000    0.000    0.001    0.000 C:\Python311\Lib\threading.py:288(wait)
+      498    0.001    0.000    0.001    0.000 C:\Python311\Lib\threading.py:267(__exit__)
+      990    0.001    0.000    0.001    0.000 <frozen posixpath>:41(_get_sep)
+        1    0.000    0.000    0.001    0.001 <frozen importlib._bootstrap_external>:1007(get_code)
+        3    0.001    0.000    0.001    0.000 {built-in method builtins.print}
+      990    0.001    0.000    0.001    0.000 C:\Python311\Lib\inspect.py:729(getmro)
+      500    0.001    0.000    0.001    0.000 {method 'get' of 'dict' objects}
+        1    0.000    0.000    0.001    0.001 <frozen importlib._bootstrap_external>:1127(get_data)
+        1    0.000    0.000    0.000    0.000 {built-in method io.open_code}
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:1054(_find_spec)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1496(find_spec)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1464(_get_spec)
+      494    0.000    0.000    0.000    0.000 {built-in method pygame.font.get_init}
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1604(find_spec)
+        5    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:140(_path_stat)
+      494    0.000    0.000    0.000    0.000 {method 'popleft' of 'collections.deque' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method pygame.display.set_caption}
+      498    0.000    0.000    0.000    0.000 {method '__enter__' of '_thread.lock' objects}
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:159(_path_isfile)
+        2    0.000    0.000    0.000    0.000 {built-in method _thread.start_new_thread}
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:150(_path_is_mode_type)
+        2    0.000    0.000    0.000    0.000 C:\Python311\Lib\threading.py:849(__init__)
+        6    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:96(_path_join)
+        4    0.000    0.000    0.000    0.000 C:\Python311\Lib\threading.py:555(__init__)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:493(_init_module_attrs)
+       10    0.000    0.000    0.000    0.000 C:\Python311\Lib\threading.py:236(__init__)
+        1    0.000    0.000    0.000    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\Game\rendering.py:12(<listcomp>)
+        2    0.000    0.000    0.000    0.000 C:\Python311\Lib\threading.py:583(set)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:169(__enter__)
+        1    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:437(cache_from_source)
+        2    0.000    0.000    0.000    0.000 C:\Python311\Lib\threading.py:1044(_stop)
+        2    0.000    0.000    0.000    0.000 C:\Python311\Lib\queue.py:34(__init__)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1146(path_stats)
+        3    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:392(cached)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1599(_get_spec)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:567(_get_cached)
+        1    0.000    0.000    0.000    0.000 {method '__exit__' of '_io._IOBase' objects}
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:727(_compile_bytecode)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:179(_get_module_lock)
+       12    0.000    0.000    0.000    0.000 {built-in method _thread.allocate_lock}
+        1    0.000    0.000    0.000    0.000 {built-in method marshal.loads}
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:778(spec_from_file_location)
+        2    0.000    0.000    0.000    0.000 C:\Python311\Lib\threading.py:389(notify_all)
+        2    0.000    0.000    0.000    0.000 C:\Python311\Lib\threading.py:822(_maintain_shutdown_locks)
+        2    0.000    0.000    0.000    0.000 C:\Python311\Lib\_weakrefset.py:85(add)
+        4    0.000    0.000    0.000    0.000 C:\Python311\Lib\threading.py:1446(current_thread)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:71(__init__)
+        2    0.000    0.000    0.000    0.000 C:\Python311\Lib\_weakrefset.py:39(_remove)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:132(_path_split)
+        1    0.000    0.000    0.000    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\Game\rendering.py:40(stop)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:173(__exit__)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:172(_path_isabs)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:642(_classify_pyc)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:100(acquire)
+        6    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:119(<listcomp>)
+        2    0.000    0.000    0.000    0.000 {built-in method builtins.max}
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:125(release)
+        2    0.000    0.000    0.000    0.000 C:\Python311\Lib\threading.py:804(_newname)
+        3    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:84(_unpack_uint32)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:748(find_spec)
+        2    0.000    0.000    0.000    0.000 C:\Python311\Lib\threading.py:832(<listcomp>)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:920(find_spec)
+        2    0.000    0.000    0.000    0.000 C:\Python311\Lib\threading.py:273(_release_save)
+        8    0.000    0.000    0.000    0.000 {built-in method _thread.get_ident}
+        6    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:134(<genexpr>)
+       10    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:244(_verbose_message)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:675(_validate_timestamp_pyc)
+        2    0.000    0.000    0.000    0.000 {built-in method _imp.is_builtin}
+        2    0.000    0.000    0.000    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\venv\Lib\site-packages\_distutils_hack\__init__.py:82(find_spec)
+        2    0.000    0.000    0.000    0.000 C:\Python311\Lib\threading.py:1317(_make_invoke_excepthook)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1239(exec_module)
+        8    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:1030(__exit__)
+        2    0.000    0.000    0.000    0.000 {method 'difference_update' of 'set' objects}
+        8    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:1026(__enter__)
+        2    0.000    0.000    0.000    0.000 C:\Python311\Lib\queue.py:206(_init)
+        2    0.000    0.000    0.000    0.000 C:\Python311\Lib\threading.py:276(_acquire_restore)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:357(__init__)
+       10    0.000    0.000    0.000    0.000 {method 'rpartition' of 'str' objects}
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:198(cb)
+        4    0.000    0.000    0.000    0.000 C:\Python311\Lib\threading.py:1199(daemon)
+       10    0.000    0.000    0.000    0.000 {method 'append' of 'list' objects}
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:67(_relax_case)
+        8    0.000    0.000    0.000    0.000 {method 'join' of 'str' objects}
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:405(parent)
+        2    0.000    0.000    0.000    0.000 {built-in method nt._path_splitroot}
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1097(__init__)
+        6    0.000    0.000    0.000    0.000 {built-in method builtins.hasattr}
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1421(_path_importer_cache)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:599(_check_name_wrapper)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+       12    0.000    0.000    0.000    0.000 {built-in method _imp.acquire_lock}
+       12    0.000    0.000    0.000    0.000 {built-in method _imp.release_lock}
+        2    0.000    0.000    0.000    0.000 {method 'pop' of 'list' objects}
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:165(__init__)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:48(_new_module)
+        4    0.000    0.000    0.000    0.000 {method 'release' of '_thread.lock' objects}
+        2    0.000    0.000    0.000    0.000 {built-in method _imp.find_frozen}
+        2    0.000    0.000    0.000    0.000 {method 'discard' of 'set' objects}
+        4    0.000    0.000    0.000    0.000 {method 'rfind' of 'str' objects}
+        7    0.000    0.000    0.000    0.000 {method 'locked' of '_thread.lock' objects}
+        3    0.000    0.000    0.000    0.000 {built-in method from_bytes}
+        2    0.000    0.000    0.000    0.000 {method 'add' of 'set' objects}
+        2    0.000    0.000    0.000    0.000 {built-in method builtins.setattr}
+        1    0.000    0.000    0.000    0.000 {built-in method _imp._fix_co_filename}
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1220(__init__)
+        2    0.000    0.000    0.000    0.000 {method 'append' of 'collections.deque' objects}
+        2    0.000    0.000    0.000    0.000 {method '__exit__' of '_thread.RLock' objects}
+        1    0.000    0.000    0.000    0.000 C:\Users\Fugl\Desktop\ClimbSmart - Platformer driven by ML\ClimbSmart-main\Game\rendering.py:37(get_queues)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:413(has_location)
+        2    0.000    0.000    0.000    0.000 {method 'pop' of 'dict' objects}
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:931(create_module)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1122(get_filename)
+        1    0.000    0.000    0.000    0.000 {built-in method _imp.exec_dynamic}
+
+

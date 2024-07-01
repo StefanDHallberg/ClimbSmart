@@ -15,8 +15,8 @@ def update_display(game_setup, episode, total_reward):
     """ Update game components and render the new game state. """
     game_setup.platform_manager.update(game_setup.player)
     game_setup.player.update_score()
-    
+
     # Render the game state
-    GraphicsHandler.render(game_setup.screen, game_setup.player, game_setup.platform_manager.platforms, 
+    GraphicsHandler.render(game_setup.screen, game_setup.player, game_setup.platform_manager.platforms,
                            game_setup.camera_offset_y, episode, total_reward)
     pygame.display.flip()  # Refresh the screen display
