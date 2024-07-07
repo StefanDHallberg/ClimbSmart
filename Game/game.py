@@ -31,7 +31,6 @@ def run_game_instance_thread(queue, num_agents, screen_width, screen_height, sto
         game = TrainingGame(num_agents, screen_width, screen_height, queue, stop_event, verbose)
         print("Game setup initialized.")
         game.run_game()
-        pygame.display.flip()
     except Exception as e:
         print(f"Exception in game instance: {e}")
     finally:
