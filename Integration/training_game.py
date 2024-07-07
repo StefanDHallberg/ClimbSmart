@@ -13,9 +13,10 @@ class TrainingGame:
         self.num_agents = num_agents
         self.queues = queues
         self.verbose = verbose
-        self.max_episode_duration = 15
+        self.max_episode_duration = 30 # Maximum duration of an episode in seconds
         self.episode = 1
         self.stop_event = stop_event
+        self.save_interval = 5  # Save memory every x episodes
 
         self.screen_width = screen_width
         self.screen_height = screen_height
@@ -32,6 +33,10 @@ class TrainingGame:
 
         self.initialize_platforms()
         self.initialize_players()
+
+        # Load memory if exists
+        for i, ai_integration in enumerate(self.ai_integrations):
+            ai_integration.replay_memory.load_memory(f"memory_agent_{i}.pkl")
 
     def get_states(self):
         with torch.no_grad():
@@ -81,6 +86,11 @@ class TrainingGame:
                 self.cleanup()
                 self.episode += 1
                 self.reset_game_state()
+
+                # Save replay memory at intervals
+                if self.episode % self.save_interval == 0:
+                    for i, ai_integration in enumerate(self.ai_integrations):
+                        ai_integration.replay_memory.save_memory(f"memory_agent_{i}.pkl")
 
         except KeyboardInterrupt:
             print("Training loop interrupted by user")
@@ -230,7 +240,6 @@ class TrainingGame:
         self.update_display(self.episode, 0)
         if self.verbose:
             print("Game state reset complete.")
-
 
     def step(self, agent_id, action):
         action = action.item() if isinstance(action, torch.Tensor) else action
