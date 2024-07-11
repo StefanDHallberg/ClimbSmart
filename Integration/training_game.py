@@ -16,13 +16,14 @@ class TrainingGame:
         self.max_episode_duration = 25
         self.episode = 1
         self.stop_event = stop_event
-        self.save_interval = 5  # Save memory every X episodes
+        self.save_interval = 3  # Save memory every X episodes
         self.terminate_immediately = False
 
         self.screen_width = screen_width
         self.screen_height = screen_height
-        self.players = [Player(self.screen_width // 2, self.screen_height - 20, self.screen_width, self.screen_height) for _ in range(num_agents)]
         self.platform_manager = PlatformManager(self.screen_width, self.screen_height)
+        # self.players = [Player(self.screen_width // 2, self.screen_height - 20, self.screen_width, self.screen_height) for _ in range(num_agents)]
+        self.players = [Player(self.screen_width // 2, self.screen_height - 20, self.screen_width, self.screen_height, self.platform_manager) for _ in range(num_agents)]
 
         self.agents = [Agent(input_channels=3, num_actions=3) for _ in range(num_agents)]
         self.ai_integrations = [GameAIIntegrations(agent, ReplayMemory(10000)) for agent in self.agents]
@@ -99,28 +100,67 @@ class TrainingGame:
         finally:
             self.cleanup()
 
+    def calculate_reward(self, agent_id, action, on_platform):
+        reward = 0
+        player = self.players[agent_id]
+
+        if action == 2 and on_platform:
+            reward = 1
+        elif action == 0 or action == 1:
+            reward = 0.1
+        else:
+                reward = -0.05
+
+        milestones = [50, 100, 150]
+        reward_increment = 50
+        for milestone in milestones:
+            if player.score >= milestone and not player.reached_milestones.get(milestone, False):
+                reward += reward_increment
+                player.reached_milestones[milestone] = True
+                print(f"Agent {agent_id} reached score {milestone}, additional reward: {reward_increment}")
+        return reward
+
+
+
     def update_agents(self, episode, states):
         total_rewards = []
         for agent_id, ai_integration in enumerate(self.ai_integrations):
             if self.verbose:
                 print(f"Agent {agent_id} state: {states[agent_id].shape}")
 
+            # Get the action from the AI integration
             action = ai_integration.select_action_and_update(states[agent_id])
+            if isinstance(action, torch.Tensor):
+                action = action.item()  # Convert torch.Tensor to a Python int if necessary
+            
             if self.verbose:
                 print(f"Selected action for agent {agent_id}: {action}")
 
-            action = action.item() if isinstance(action, torch.Tensor) else action
+            # Apply the selected action to update player states
             self.update_players(agent_id, action)
 
-            next_state = self.get_states()[agent_id]
-            reward = self.calculate_reward(agent_id, action, self.check_on_platform(agent_id))
-            done = False
+            # Handle collisions after the player has moved
+            self.players[agent_id].handle_collision(self.platform_manager.platforms)
 
+            # Check if the player is on a platform after moving and handling collisions
+            on_platform = self.check_on_platform(agent_id)
+
+            # Calculate the reward based on the new state after collision handling
+            reward = self.calculate_reward(agent_id, action, on_platform)
+
+            # Get the next state after all updates
+            next_state = self.get_states()[agent_id]
+
+            # Add the transition to the replay memory
+            done = False  # Update this based on your game's end condition
             ai_integration.replay_memory.push([states[agent_id]], [action], [reward], [next_state], [done])
 
+            # Log the reward
             ai_integration.log_data('Total Reward', reward, episode)
             total_rewards.append(reward)
+            # print(f"Total rewards: {total_rewards}")
         return total_rewards
+
 
     def cleanup(self):
         try:
@@ -187,7 +227,13 @@ class TrainingGame:
             print(f"Keys after update: {keys}")
 
     def check_on_platform(self, agent_id):
-        return self.players[agent_id].is_on_platform(self.platform_manager.platforms)
+        player = self.players[agent_id]
+        for platform in self.platform_manager.platforms:
+            if platform.on_platform and player.rect.colliderect(platform.rect):
+                print(f"Player {player.rect} on platform {platform.rect}")  # Debugging print
+                return True
+        # print(f"Agent {agent_id} not on platform")
+        return False
 
     def update_platforms(self):
         for player in self.players:
@@ -239,55 +285,3 @@ class TrainingGame:
         self.update_display(self.episode, 0)
         if self.verbose:
             print("Game state reset complete.")
-
-    # def calculate_reward(self, agent_id, action, on_platform):
-    #     reward = 0
-    #     player = self.players[agent_id]
-
-    #     # Basic movement and jumping rewards
-    #     if player.rect.centery < (self.screen_height // 2 - 50):
-    #         if action == 2 and on_platform:  # If the action is jump and the player is on a platform
-    #             reward = 1  # Basic reward for jumping on a platform
-    #         elif action == 0 or action == 1:  # Moving left or right
-    #             reward = 0.1
-    #         else:
-    #             reward = -0.05  # Penalty for other actions or no action
-
-    #     # Additional rewards based on score milestones
-    #     milestones = [50, 100, 150]  # Define score milestones
-    #     reward_increment = 50  # Define how much reward to give at each milestone
-
-    #     for milestone in milestones:
-    #         if player.score >= milestone and not player.reached_milestones.get(milestone, False):
-    #             reward += reward_increment
-    #             player.reached_milestones[milestone] = True
-    #             if self.verbose:
-    #                 print(f"Agent {agent_id} reached score {milestone}, reward added: {reward_increment}")
-
-    #     return reward
-    
-    def calculate_reward(self, agent_id, action, on_platform):
-        reward = 0
-        player = self.players[agent_id]
-
-        # Debugging output to trace calculations
-        # print(f"Agent {agent_id} - Action: {action}, On Platform: {on_platform}, Player Score: {player.score}")
-
-        if player.rect.centery < (self.screen_height // 2 - 50):
-            if action == 2 and on_platform:
-                reward = 1
-            elif action == 0 or action == 1:
-                reward = 0.1
-            else:
-                reward = -0.05
-
-        milestones = [50, 100, 150]
-        reward_increment = 50
-        for milestone in milestones:
-            if player.score >= milestone and not player.reached_milestones.get(milestone, False):
-                reward += reward_increment
-                player.reached_milestones[milestone] = True
-                print(f"Agent {agent_id} reached score {milestone}, additional reward: {reward_increment}")
-
-        # print(f"Total Reward for Agent {agent_id}: {reward}")
-        return reward

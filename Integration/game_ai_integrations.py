@@ -12,3 +12,4 @@ class GameAIIntegrations:
 
     def log_data(self, tag, value, step):
         self.writer.add_scalar(tag, value, step)
+        self.writer.close()

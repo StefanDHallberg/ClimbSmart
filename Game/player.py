@@ -1,13 +1,14 @@
 import pygame
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, x, y, screen_width, screen_height):
+    def __init__(self, x, y, screen_width, screen_height, platform_manager):
         super().__init__()
         self.image_path = "./Game/Assets/Tiles/Characters/tile_0000.png"  # Image path
         self.image = pygame.image.load(self.image_path)  # Load the image from the provided path
         self.rect = self.image.get_rect()
         self.rect.centerx = x
         self.rect.centery = y
+        self.platform_manager = platform_manager
 
         self.screen_width = screen_width
         self.screen_height = screen_height
@@ -32,14 +33,24 @@ class Player(pygame.sprite.Sprite):
         self.initial_y = y
 
     def handle_collision(self, platforms):
+        on_any_platform = False  # This will track if the player is on any platform
         for platform in platforms:
-            if self.rect.colliderect(platform.rect):
-                if self.vel_y > 0 and self.rect.bottom <= platform.rect.top + self.vel_y:
+            # Check if there is a collision and the player is moving downward (or stationary after jumping)
+            if self.rect.colliderect(platform.rect) and self.vel_y >= 0:
+                if self.rect.bottom <= platform.rect.top + self.vel_y:
+                    # Correct the player's position so they are on top of the platform
                     self.rect.bottom = platform.rect.top
                     self.vel_y = 0
                     self.is_jumping = False
-                    self.update_score(platform.rect.centery)
                     platform.on_platform = True
+                    on_any_platform = True  # Player is now confirmed to be on at least one platform
+                else:
+                    # Ensure platforms that are not collided with are marked as not having the player on them
+                    platform.on_platform = False
+            else:
+                platform.on_platform = False
+
+        return on_any_platform
 
     def update_score(self, platform_y=None):
         current_y = self.rect.bottom if platform_y is None else platform_y
@@ -75,13 +86,13 @@ class Player(pygame.sprite.Sprite):
         self.rect.left = max(self.rect.left, 0)
         self.rect.right = min(self.rect.right, self.screen_width)
 
-    def is_on_platform(self, platforms):
-        for platform in platforms:
-            if self.rect.colliderect(platform.rect) and self.rect.bottom == platform.rect.top:
-                print(f"Player {self.rect} on platform {platform.rect}")  # Debugging print
-                return True
-        print("Player not on platform")  # Debugging print
-        return False
+    # def is_on_platform(self, platforms):
+    #     for platform in platforms:
+    #         if self.rect.colliderect(platform.rect) and self.rect.bottom == platform.rect.top:
+    #             print(f"Player {self.rect} on platform {platform.rect}")  # Debugging print
+    #             return True
+    #     # print("Player not on platform")  # Debugging print
+    #     return False
 
     def handle_movement(self, keys):
         if keys.get(pygame.K_a, False):
