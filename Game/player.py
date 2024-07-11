@@ -22,6 +22,7 @@ class Player(pygame.sprite.Sprite):
         self.flip = False  # For flipping the player image
 
         self.highest_y = self.rect.bottom  # Initialize highest position reached
+        self.reached_milestones = {}  # Dictionary to keep track of reached milestones
         self.score = 0  # Initialize score
         self.high_score = 0
         self.reached_high_score = False
@@ -53,14 +54,16 @@ class Player(pygame.sprite.Sprite):
     def staying_still(self):
         return self.initial_x == 0 and self.initial_y == 0
 
+
     def reset(self):
-        self.score = 0
         self.rect.centerx = self.initial_x
         self.rect.centery = self.initial_y
         self.vel_y = 0
         self.is_jumping = False
+        self.score = 0
+        self.highest_y = self.rect.bottom  # Reset the highest position reached
         self.reached_high_score = False
-        # self.camera_offset_y = 0
+        self.reached_milestones = {} # Reset milestones on new game or new episode
 
     def update(self, keys, platforms):
         self.handle_movement(keys)
@@ -75,7 +78,9 @@ class Player(pygame.sprite.Sprite):
     def is_on_platform(self, platforms):
         for platform in platforms:
             if self.rect.colliderect(platform.rect) and self.rect.bottom == platform.rect.top:
+                print(f"Player {self.rect} on platform {platform.rect}")  # Debugging print
                 return True
+        print("Player not on platform")  # Debugging print
         return False
 
     def handle_movement(self, keys):

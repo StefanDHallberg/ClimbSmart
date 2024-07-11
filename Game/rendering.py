@@ -1,4 +1,3 @@
-import threading
 import pygame
 import queue
 from Game.graphics import GraphicsHandler
@@ -10,11 +9,10 @@ class GameRenderer:
         pygame.display.set_caption("ClimbSmart Multi-Agent")
         self.clock = pygame.time.Clock()
         self.queues = [queue.Queue() for _ in range(num_agents)]
-        self.stop_event = threading.Event()
 
     def render(self):
         running = True
-        while running and not self.stop_event.is_set():
+        while running:
             with pygame_lock:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
@@ -26,7 +24,7 @@ class GameRenderer:
                         self._render_frame(render_data)
 
                 pygame.display.flip()
-                self.clock.tick(60)  # Cap the frame rate to 60 FPS
+                self.clock.tick(60)  # Cap the frame rate at 60 FPS
 
         pygame.quit()
 
@@ -36,6 +34,3 @@ class GameRenderer:
 
     def get_queues(self):
         return self.queues
-
-    def stop(self):
-        self.stop_event.set()
