@@ -109,7 +109,7 @@ class TrainingGame:
         elif action == 0 or action == 1:
             reward = 0.1
         else:
-                reward = -0.05
+            reward = -0.05
 
         milestones = [50, 100, 150]
         reward_increment = 50
