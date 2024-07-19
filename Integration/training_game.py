@@ -156,7 +156,7 @@ class TrainingGame:
             ai_integration.replay_memory.push([states[agent_id]], [action], [reward], [next_state], [done])
 
             # Log the reward
-            ai_integration.log_data('Total Reward', reward, episode)
+            # ai_integration.log_data('Total Reward', reward, episode)
             total_rewards.append(reward)
             # print(f"Total rewards: {total_rewards}")
         return total_rewards
