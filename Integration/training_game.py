@@ -1,4 +1,5 @@
 import time
+import numpy as np
 import pygame
 import torch
 from ML.memory import ReplayMemory
@@ -22,14 +23,13 @@ class TrainingGame:
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.platform_manager = PlatformManager(self.screen_width, self.screen_height)
-        # self.players = [Player(self.screen_width // 2, self.screen_height - 20, self.screen_width, self.screen_height) for _ in range(num_agents)]
         self.players = [Player(self.screen_width // 2, self.screen_height - 20, self.screen_width, self.screen_height, self.platform_manager) for _ in range(num_agents)]
 
-        self.agents = [Agent(input_channels=3, num_actions=3) for _ in range(num_agents)]
+        self.agents = [Agent(input_channels=3, num_actions=3, input_width=screen_width, input_height=screen_height) for _ in range(num_agents)]
+        
         self.ai_integrations = [GameAIIntegrations(agent, ReplayMemory(10000)) for agent in self.agents]
 
         self.state_tensor = torch.zeros((num_agents, 3, self.screen_width, self.screen_height), dtype=torch.float32)
-       
         self.clock = pygame.time.Clock()
 
 
@@ -50,7 +50,6 @@ class TrainingGame:
             self.state_tensor.normal_()
         return self.state_tensor
 
-
     def run_game(self):
         try:
             while not self.stop_event.is_set():
@@ -69,14 +68,16 @@ class TrainingGame:
                     self.update_platforms()
                     self.update_display(self.episode, total_reward)
 
-                    # time.sleep(0.016)
                     self.clock.tick(60)  # Limit frame rate to 60 FPS
 
 
                 if not self.stop_event.is_set():
                     for ai_integration in self.ai_integrations:
                         if ai_integration:
-                            ai_integration.writer.add_scalar('Total Reward', total_reward, self.episode)
+                            # Logging (if needed)
+                            # ai_integration.writer.add_scalar('Total Reward', total_reward, self.episode)
+                            
+                            # Optimize the model based on collected experience
                             ai_integration.agent.optimize_model()
 
                     if self.verbose:
@@ -85,8 +86,6 @@ class TrainingGame:
                 self.cleanup()
                 self.episode += 1
                 self.reset_game_state()
-
-
 
                 # Save replay memory at intervals
                 if self.episode % self.save_interval == 0:
@@ -104,13 +103,14 @@ class TrainingGame:
         reward = 0
         player = self.players[agent_id]
 
-        if action == 2 and on_platform:
-            reward = 1
-        elif action == 0 or action == 1:
-            reward = 0.1
-        else:
-            reward = -0.05
+        if on_platform:
+            reward += 1
+        if action == 2 and player.is_jumping:
+            reward += 0.5
+        elif action in [0, 1]:  # Moving left or right
+            reward += 0.1
 
+        # Additional reward for reaching higher scores
         milestones = [50, 100, 150]
         reward_increment = 50
         for milestone in milestones:
@@ -118,9 +118,7 @@ class TrainingGame:
                 reward += reward_increment
                 player.reached_milestones[milestone] = True
                 print(f"Agent {agent_id} reached score {milestone}, additional reward: {reward_increment}")
-        return reward
-
-
+    
 
     def update_agents(self, episode, states):
         total_rewards = []
@@ -132,7 +130,7 @@ class TrainingGame:
             action = ai_integration.select_action_and_update(states[agent_id])
             if isinstance(action, torch.Tensor):
                 action = action.item()  # Convert torch.Tensor to a Python int if necessary
-            
+
             if self.verbose:
                 print(f"Selected action for agent {agent_id}: {action}")
 
@@ -157,21 +155,22 @@ class TrainingGame:
 
             # Log the reward
             # ai_integration.log_data('Total Reward', reward, episode)
-            total_rewards.append(reward)
+            total_rewards.append(reward if reward is not None else 0)  # Ensure reward is numeric
             # print(f"Total rewards: {total_rewards}")
         return total_rewards
+
 
 
     def cleanup(self):
         try:
             if not self.terminate_immediately:
                 self.flush_queues()
-            for ai_integration in self.ai_integrations:
-                try:
-                    if ai_integration:
-                        ai_integration.writer.close()
-                except Exception as e:
-                    print(f"Exception closing writer: {e}")
+            # for ai_integration in self.ai_integrations:
+            #     try:
+            #         if ai_integration:
+            #             ai_integration.writer.close()
+            #     except Exception as e:
+            #         print(f"Exception closing writer: {e}")
             self.is_running = False
             if self.verbose:
                 print("Training loop terminated")

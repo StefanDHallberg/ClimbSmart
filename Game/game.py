@@ -46,12 +46,10 @@ def main():
         print("Terminating game process...")
         stop_event.set()
         game_thread.join()
-        # resource_monitor_thread.join()
         pygame.quit()
         print("Pygame quit in main")
 
 if __name__ == "__main__":
-
     try:
         main()
     except Exception as e:
