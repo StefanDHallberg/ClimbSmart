@@ -33,9 +33,3 @@ class DQN(nn.Module):
         x = torch.relu(self.fc2(x))
         x = self.out(x)
         return x
-
-# Create a dummy input tensor with the same shape as your actual input data
-dummy_input = torch.randn(1, 3, 800, 900)  # Assuming your input size is (3, 800, 900)
-
-model = DQN(input_channels=3, num_actions=3, input_width=800, input_height=900)
-model.forward(dummy_input)
