@@ -120,6 +120,7 @@ class Player(pygame.sprite.Sprite):
         if not on_platform:
             self.vel_y += self.gravity
 
+
     def jump(self, keys):
         if (keys.get(pygame.K_w) or keys.get(pygame.K_UP)) and not self.is_jumping:
             self.vel_y = self.jump_vel
