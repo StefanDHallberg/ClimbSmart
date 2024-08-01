@@ -1,7 +1,7 @@
 import time
-import numpy as np
 import pygame
 import torch
+from Game.rendering import GameRenderer
 from ML.memory import ReplayMemory
 from ML.agent import Agent
 from Game.platforms import PlatformManager
@@ -19,20 +19,20 @@ class TrainingGame:
         self.stop_event = stop_event
         self.save_interval = 3  # Save memory every X episodes
         self.terminate_immediately = False
-
         self.screen_width = screen_width
         self.screen_height = screen_height
+
+        # Initialize GameRenderer
+        self.renderer = GameRenderer(screen_width, screen_height, num_agents)
+
+
         self.platform_manager = PlatformManager(self.screen_width, self.screen_height)
         self.players = [Player(self.screen_width // 2, self.screen_height - 20, self.screen_width, self.screen_height, self.platform_manager) for _ in range(num_agents)]
-
         self.agents = [Agent(input_channels=3, num_actions=3, input_width=screen_width, input_height=screen_height) for _ in range(num_agents)]
-        
         self.ai_integrations = [GameAIIntegrations(agent, ReplayMemory(10000)) for agent in self.agents]
 
         self.state_tensor = torch.zeros((num_agents, 3, self.screen_width, self.screen_height), dtype=torch.float32)
         self.clock = pygame.time.Clock()
-
-
 
         if self.verbose:
             print(f"Initialized {self.ai_integrations}")
@@ -46,9 +46,8 @@ class TrainingGame:
 
     def get_states(self):
         with torch.no_grad():
-            self.state_tensor.zero_()
-            self.state_tensor.normal_()
-        return self.state_tensor
+            state_tensor = torch.from_numpy(self.renderer.capture_screen()).float().unsqueeze(0)
+        return state_tensor
 
     def run_game(self):
         try:
@@ -62,7 +61,11 @@ class TrainingGame:
                 while self.is_running and not self.stop_event.is_set() and time.time() - self.start_time <= self.max_episode_duration:
                     handle_events(self)
 
-                    states = self.get_states()
+                    # Capture and preprocess screen
+                    raw_screen = self.renderer.capture_screen(self.screen)
+                    preprocessed_screen = self.renderer.preprocess_image(raw_screen, self.screen_width, self.screen_height)
+
+                    states = self.get_states(preprocessed_screen)  # Pass preprocessed image as state
                     total_rewards = self.update_agents(self.episode, states)
                     total_reward += sum(total_rewards)
                     self.update_platforms()
@@ -99,6 +102,7 @@ class TrainingGame:
         finally:
             self.cleanup()
 
+    
     def calculate_reward(self, agent_id, action, on_platform):
         reward = 0
         player = self.players[agent_id]

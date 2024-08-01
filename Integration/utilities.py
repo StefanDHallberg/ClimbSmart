@@ -1,9 +1,8 @@
 import pygame
-import threading
 from Game.graphics import GraphicsHandler
 
-# Shared lock for pygame access
-pygame_lock = threading.Lock()
+# # Shared lock for pygame access
+# pygame_lock = threading.Lock()
 
 def handle_events(game_setup):
     """ Handle basic pygame events like quitting the game. """
@@ -20,3 +19,5 @@ def update_display(game_setup, episode, total_reward):
     GraphicsHandler.render(game_setup.screen, game_setup.player, game_setup.platform_manager.platforms,
                            game_setup.camera_offset_y, episode, total_reward)
     pygame.display.flip()  # Refresh the screen display
+
+

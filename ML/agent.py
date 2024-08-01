@@ -26,9 +26,10 @@ class Agent:
         self.verbose = verbose
 
     def select_action(self, state):
-        with torch.no_grad():  # Ensure no gradients are tracked
+        state_tensor = torch.from_numpy(state).float().unsqueeze(0)
+        with torch.no_grad():
             if random.random() > self.epsilon:
-                action = self.dqn(state).max(1)[1].view(1, 1)
+                action = self.dqn(state_tensor).max(1)[1].view(1, 1)
                 if self.verbose:
                     print(f"Selected action (exploitation): {action}")
                 return action

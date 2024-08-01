@@ -1,7 +1,8 @@
+import cv2
+import numpy as np
 import pygame
 import queue
 from Game.graphics import GraphicsHandler
-from Integration.utilities import pygame_lock
 
 class GameRenderer:
     def __init__(self, screen_width, screen_height, num_agents):
@@ -13,15 +14,14 @@ class GameRenderer:
     def render(self):
         running = True
         while running:
-            with pygame_lock:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        running = False
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
 
-                for q in self.queues:
-                    if not q.empty():
-                        render_data = q.get()
-                        self._render_frame(render_data)
+            for q in self.queues:
+                if not q.empty():
+                    render_data = q.get()
+                    self._render_frame(render_data)
 
                 pygame.display.flip()
                 self.clock.tick(60)  # Cap the frame rate at 60 FPS
@@ -34,3 +34,19 @@ class GameRenderer:
 
     def get_queues(self):
         return self.queues
+    
+    def capture_screen(screen):
+        """Capture the current game screen as a numpy array."""
+        # Capture the screen image
+        screen_image = pygame.surfarray.array3d(pygame.display.get_surface())
+        # Transpose the image to have the color channel as the first dimension
+        screen_image = np.transpose(screen_image, (2, 0, 1))
+        return screen_image
+
+    def preprocess_image(image, width, height):
+        """Resize and normalize the image."""
+        # Resize the image to match the network's input size
+        resized_image = cv2.resize(image, (width, height))
+        # Normalize the pixel values to [0, 1]
+        normalized_image = resized_image / 255.0
+        return normalized_image
