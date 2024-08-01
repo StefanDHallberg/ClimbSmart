@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
@@ -26,14 +27,34 @@ class Agent:
         self.verbose = verbose
 
     def select_action(self, state):
-        state_tensor = torch.from_numpy(state).float().unsqueeze(0)
+        # Ensure state is a tensor
+        if isinstance(state, np.ndarray):
+            state = torch.from_numpy(state).float().unsqueeze(0)
+
+        if self.verbose:
+            # Print state shape for debugging
+            print(f"State shape before action selection: {state.shape}")  # Debugging statement
+
         with torch.no_grad():
             if random.random() > self.epsilon:
-                action = self.dqn(state_tensor).max(1)[1].view(1, 1)
+                # Get Q-values for all actions
+                q_values = self.dqn(state)
+                # Print Q-values shape for debugging
+                print(f"Q-values shape: {q_values.shape}")  # Debugging statement
+
+                # Check if q_values has the correct shape
+                if q_values.size(0) == 1 and q_values.size(1) == self.num_actions:
+                    # Select the action with the maximum Q-value
+                    action = q_values.max(1)[1].view(1, 1)  # Ensure correct indexing
+                    print(f"Action selected (exploitation): {action}")
+                else:
+                    raise ValueError(f"Unexpected Q-values shape: {q_values.shape}")
+
                 if self.verbose:
                     print(f"Selected action (exploitation): {action}")
                 return action
             else:
+                # Select a random action
                 action = torch.tensor([[random.randrange(self.num_actions)]], dtype=torch.long)
                 if self.verbose:
                     print(f"Selected action (exploration): {action}")
@@ -125,57 +146,3 @@ class Agent:
         self.optimizer.zero_grad()
 
         self.update_epsilon()
-
-
-    # def optimize_model(self):
-    #     if len(self.memory) < self.batch_size:
-    #         return
-
-    #     # Sample batch of transitions
-    #     transitions = self.memory.sample(self.batch_size)
-    #     batch = Transition(*zip(*transitions))
-
-    #     device = self.dqn.fc1.weight.device
-    #     scaler = GradScaler()
-
-    #     # Separate batch data
-    #     non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), dtype=torch.bool, device=device)
-    #     non_final_next_states = torch.cat([s for s in batch.next_state if s is not None]).to(device)
-    #     state_batch = torch.cat(batch.state).to(device)
-    #     action_batch = torch.cat(batch.action).to(device)
-    #     reward_batch = torch.cat(batch.reward).to(device)
-
-    #     self.optimizer.zero_grad()
-
-    #     # Compute Q(s_t, a)
-    #     with autocast():
-    #         state_action_values = self.dqn(state_batch).gather(1, action_batch)
-
-    #         # Compute V(s_{t+1}) for all next states.
-    #         next_state_values = torch.zeros(self.batch_size, device=device)
-    #         if non_final_next_states.size(0) > 0:
-    #             next_q_values = self.dqn(non_final_next_states).max(1)[0].detach()
-    #             next_state_values[non_final_mask] = next_q_values
-
-    #         # Compute the expected Q values
-    #         expected_state_action_values = (next_state_values * self.gamma) + reward_batch
-    #         expected_state_action_values = expected_state_action_values.unsqueeze(1)
-
-    #         # Compute Huber loss
-    #         loss = F.smooth_l1_loss(state_action_values, expected_state_action_values)
-    #         if self.verbose:
-    #             print(f"Loss: {loss.item()}")
-
-    #     # Backward pass with gradient scaling
-    #     scaler.scale(loss).backward()
-    #     for param in self.dqn.parameters():
-    #         param.grad.data.clamp_(-1, 1)
-    #     scaler.step(self.optimizer)
-    #     scaler.update()
-
-    #     # Update epsilon after optimization
-    #     self.update_epsilon()
-
-    #     # Print CUDA memory summary
-    #     if self.verbose and torch.cuda.is_available():
-    #         print(torch.cuda.memory_summary(device=device))

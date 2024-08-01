@@ -2,7 +2,8 @@ from collections import namedtuple, deque
 import os
 import random
 import pickle
-import asyncio
+import numpy as np
+import torch
 
 # Defining the Transition namedtuple
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'done'))
@@ -13,17 +14,23 @@ class ReplayMemory:
         self.memory = []
         self.position = 0
 
-    def push(self, states, actions, rewards, next_states, dones):
-        for state, action, reward, next_state, done in zip(states, actions, rewards, next_states, dones):
-            if len(self.memory) < self.capacity:
-                self.memory.append(None)
-            self.memory[self.position] = (state, action, reward, next_state, done)
-            self.position = (self.position + 1) % self.capacity
+    def push(self, state, action, reward, next_state, done):
+        """Saves a transition."""
+        # Convert incoming tensor data to NumPy arrays if necessary
+        if isinstance(state, torch.Tensor):
+            state = state.numpy()
+        if isinstance(next_state, torch.Tensor):
+            next_state = next_state.numpy()
+
+        if len(self.memory) < self.capacity:
+            self.memory.append(None)
+        self.memory[self.position] = (state, action, reward, next_state, done)
+        self.position = (self.position + 1) % self.capacity
 
     def sample(self, batch_size):
-        if len(self.memory) < batch_size:
-            return []
-        return random.sample(self.memory, batch_size)
+        """Samples a random batch of transitions."""
+        batch = random.sample(self.memory, batch_size)
+        return map(np.array, zip(*batch))
 
     def __len__(self):
         return len(self.memory)
@@ -52,7 +59,3 @@ class ReplayMemory:
     def clear(self):
         self.memory.clear()
         print("Cleared replay memory")
-
-    async def async_push(self, states, actions, rewards, next_states, dones):
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, self.push, states, actions, rewards, next_states, dones)

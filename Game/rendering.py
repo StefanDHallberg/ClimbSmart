@@ -1,8 +1,11 @@
+import threading
 import cv2
 import numpy as np
 import pygame
 import queue
 from Game.graphics import GraphicsHandler
+# # Shared lock for pygame access
+pygame_lock = threading.Lock()
 
 class GameRenderer:
     def __init__(self, screen_width, screen_height, num_agents):
@@ -14,14 +17,15 @@ class GameRenderer:
     def render(self):
         running = True
         while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
+            with pygame_lock:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
 
-            for q in self.queues:
-                if not q.empty():
-                    render_data = q.get()
-                    self._render_frame(render_data)
+                for q in self.queues:
+                    if not q.empty():
+                        render_data = q.get()
+                        self._render_frame(render_data)
 
                 pygame.display.flip()
                 self.clock.tick(60)  # Cap the frame rate at 60 FPS
@@ -35,18 +39,23 @@ class GameRenderer:
     def get_queues(self):
         return self.queues
     
-    def capture_screen(screen):
+    def capture_screen(self):
         """Capture the current game screen as a numpy array."""
-        # Capture the screen image
-        screen_image = pygame.surfarray.array3d(pygame.display.get_surface())
-        # Transpose the image to have the color channel as the first dimension
-        screen_image = np.transpose(screen_image, (2, 0, 1))
+        # Capture the screen image from self.screen
+        screen_image = pygame.surfarray.array3d(self.screen)  # Use self.screen
+        # Convert the shape from (width, height, channels) to (height, width, channels) for OpenCV
+        screen_image = np.transpose(screen_image, (1, 0, 2))  # Transpose to (height, width, channels)
+        # print(f"Captured screen image shape: {screen_image.shape}")  # debug
         return screen_image
 
-    def preprocess_image(image, width, height):
+    def preprocess_image(self, image, width, height):
         """Resize and normalize the image."""
+        if image.size == 0:
+            raise ValueError("Captured image is empty. Ensure the screen is being captured correctly.")
+
         # Resize the image to match the network's input size
-        resized_image = cv2.resize(image, (width, height))
+        # print(f"Resizing image from shape {image.shape} to ({height}, {width})")  # Debugging statement
+        resized_image = cv2.resize(image, (width, height))  # OpenCV expects width, height in this order
         # Normalize the pixel values to [0, 1]
         normalized_image = resized_image / 255.0
         return normalized_image

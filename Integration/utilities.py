@@ -1,8 +1,6 @@
 import pygame
 from Game.graphics import GraphicsHandler
 
-# # Shared lock for pygame access
-# pygame_lock = threading.Lock()
 
 def handle_events(game_setup):
     """ Handle basic pygame events like quitting the game. """
