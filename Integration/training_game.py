@@ -6,38 +6,65 @@ from ML.memory import ReplayMemory
 from ML.agent import Agent
 from Game.platforms import PlatformManager
 from Game.player import Player
-from Integration.utilities import handle_events
 from Integration.game_ai_integrations import GameAIIntegrations
+import config
 
 class TrainingGame:
-    def __init__(self, renderer, queues, num_agents, screen_width, screen_height, stop_event, verbose=False):
+    def __init__(self, renderer, queues, stop_event):
         self.renderer = renderer  # Use the shared renderer instance
         self.queues = queues
-        self.num_agents = num_agents
-        self.verbose = verbose
-        self.max_episode_duration = 25
+        self.num_agents = config.num_agents
+        self.verbose = config.verbose
+        self.max_episode_duration = config.max_episode_duration
         self.episode = 1
         self.stop_event = stop_event
-        self.save_interval = 3  # Save memory every X episodes
-        self.terminate_immediately = False
-        self.screen_width = screen_width
-        self.screen_height = screen_height
+        self.save_interval = config.replay_memory_save_interval
+        self.screen_width = config.screen_width
+        self.screen_height = config.screen_height
 
         self.platform_manager = PlatformManager(self.screen_width, self.screen_height)
-        self.players = [Player(self.screen_width // 2, self.screen_height - 20, self.screen_width, self.screen_height, self.platform_manager) for _ in range(num_agents)]
-        self.agents = [Agent(input_channels=3, num_actions=3, input_width=screen_width, input_height=screen_height) for _ in range(num_agents)]
-        self.ai_integrations = [GameAIIntegrations(agent, ReplayMemory(50_000)) for agent in self.agents]
+        
+        self.players = [
+            Player(
+                self.screen_width // 2,
+                self.screen_height - 20,
+                self.screen_width,
+                self.screen_height,
+                self.platform_manager
+            ) for _ in range(self.num_agents)
+        ]
+        
+        # Initialize agents with parameters from config
+        self.agents = [
+            Agent(
+                input_channels=config.input_channels,
+                num_actions=config.num_actions,
+                input_width=self.screen_width,
+                input_height=self.screen_height,
+                lr=config.learning_rate,
+                gamma=config.gamma,
+                batch_size=config.batch_size,
+                epsilon_start=config.epsilon_start,
+                epsilon_final=config.epsilon_final,
+                epsilon_decay=config.epsilon_decay,
+                verbose=self.verbose
+            ) for _ in range(self.num_agents)
+        ]
 
-        self.state_tensor = torch.zeros((num_agents, 3, self.screen_width, self.screen_height), dtype=torch.float32)
+        self.ai_integrations = [
+            GameAIIntegrations(
+                agent,
+                ReplayMemory(config.memory_capacity)
+            ) for agent in self.agents
+        ]
+
+        self.state_tensor = torch.zeros((self.num_agents, config.input_channels, self.screen_width, self.screen_height), dtype=torch.float32)
         self.clock = pygame.time.Clock()
 
         if self.verbose:
             print("Initializing TrainingGame")
             print(f"Initialized {self.ai_integrations}")
             print(f"State tensor shape: {self.state_tensor.shape}") #This creates a tensor that can hold the state for each agent separately.
-
-        # self.initialize_platforms()
-        # self.initialize_players()
 
         # Load memory if exists
         for i, ai_integration in enumerate(self.ai_integrations):
@@ -73,7 +100,7 @@ class TrainingGame:
                 self.is_running = True
 
                 while self.is_running and not self.stop_event.is_set() and time.time() - self.start_time <= self.max_episode_duration:
-                    handle_events(self)
+                    self.handle_events()
 
                     # Capture and preprocess screen
                     raw_screen = self.renderer.capture_screen()
@@ -105,7 +132,7 @@ class TrainingGame:
                 # Save replay memory at intervals
                 if self.episode % self.save_interval == 0:
                     for i, ai_integration in enumerate(self.ai_integrations):
-                        ai_integration.replay_memory.save_memory(f"memory_agent_{i}.pkl")
+                        ai_integration.replay_memory.save_memory(config.replay_memory_file_template.format(i=i))
 
         except KeyboardInterrupt:
             print("Training loop interrupted by user")
@@ -114,6 +141,11 @@ class TrainingGame:
         finally:
             self.cleanup()
 
+    def handle_events(self):
+        """ Handle basic pygame events like quitting the game. """
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.is_running = False
 
 
     def calculate_reward(self, agent_id, action, on_platform):
@@ -189,11 +221,9 @@ class TrainingGame:
 
     def cleanup(self):
         try:
-            if not self.terminate_immediately:
+            if self.is_running and not self.stop_event.is_set():
                 self.flush_queues()
             self.is_running = False
-            if self.verbose:
-                print("Training loop terminated")
         except Exception as e:
             print(f"Exception during cleanup: {e}")
         finally:
@@ -298,7 +328,7 @@ class TrainingGame:
             print("Resetting game state...")
         self.update_display(self.episode, 0)
         self.reset_game()
-        self.ai_integrations = [GameAIIntegrations(agent, ReplayMemory(50_000)) for agent in self.agents]
+        self.ai_integrations = [GameAIIntegrations(agent, ReplayMemory(config.memory_capacity)) for agent in self.agents]
         self.update_display(self.episode, 0)
         if self.verbose:
             print("Game state reset complete.")

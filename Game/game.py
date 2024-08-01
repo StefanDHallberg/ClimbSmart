@@ -10,32 +10,33 @@ sys.path.append(parent_dir)
 
 from Game.rendering import GameRenderer
 from Integration.training_game import TrainingGame
+import config
 
-def run_game_instance_thread(renderer, queue, num_agents, screen_width, screen_height, stop_event, verbose=False):
+def run_game_instance_thread(renderer, queues, stop_event, verbose=config.verbose):
     game = None
     try:
         print("Initializing game instance...")
-        game = TrainingGame(renderer, queue, num_agents, screen_width, screen_height, stop_event, verbose)
+        game = TrainingGame(renderer, queues, stop_event)
         print("Game setup initialized.")
         game.run_game()
     except Exception as e:
         print(f"Exception in game instance: {e}")
-    
+    finally:
+        print("Exiting game instance thread.")
 
 def main():
     pygame.init()  # Initialize Pygame
-    screen_width, screen_height = 800, 900
-    num_agents = 2
 
-    # Initialize GameRenderer once and share across threads
-    renderer = GameRenderer(screen_width, screen_height, num_agents)
+    # Use config values
+    renderer = GameRenderer(config.screen_width, config.screen_height, config.num_agents)
     stop_event = threading.Event()
     queues = renderer.get_queues()
 
-
-
-    # Pass renderer to the thread
-    game_thread = threading.Thread(target=run_game_instance_thread, args=(renderer, queues, num_agents, screen_width, screen_height, stop_event, False))
+    # Start game thread
+    game_thread = threading.Thread(
+        target=run_game_instance_thread,
+        args=(renderer, queues, stop_event, config.verbose)
+    )
     game_thread.start()
 
     try:
@@ -44,8 +45,8 @@ def main():
         print("Interrupted by user.")
     finally:
         print("Terminating game process...")
-        stop_event.set()
-        game_thread.join()
+        stop_event.set()  # Signal the game thread to stop
+        game_thread.join()  # Wait for the game thread to finish
         pygame.quit()
         print("Pygame quit in main")
 

@@ -3,6 +3,7 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 import random
+import config
 from collections import namedtuple
 from .dqn_model import DQN
 from .memory import ReplayMemory
@@ -13,18 +14,17 @@ from torch.cuda.amp import autocast, GradScaler
 Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
 class Agent:
-    def __init__(self, input_channels, num_actions, input_width, input_height, lr=0.001, gamma=0.99, batch_size=64, capacity=10000,
-                 epsilon_start=1.0, epsilon_final=0.01, epsilon_decay=0.999, verbose=False):
-        self.dqn = DQN(input_channels, num_actions, input_width, input_height)
-        self.memory = ReplayMemory(capacity)
-        self.optimizer = optim.Adam(self.dqn.parameters(), lr=lr)
-        self.gamma = gamma
-        self.batch_size = batch_size
-        self.num_actions = num_actions
-        self.epsilon = epsilon_start
-        self.epsilon_final = epsilon_final
-        self.epsilon_decay = epsilon_decay
-        self.verbose = verbose
+    def __init__(self, input_channels, num_actions, input_width, input_height, lr, gamma, batch_size, epsilon_start, epsilon_final, epsilon_decay, verbose):
+        self.dqn = DQN(config.input_channels, config.num_actions, config.screen_width, config.screen_height)
+        self.memory = ReplayMemory(config.memory_capacity)
+        self.optimizer = optim.Adam(self.dqn.parameters(), lr=config.learning_rate)
+        self.gamma = config.gamma
+        self.batch_size = config.batch_size
+        self.num_actions = config.num_actions
+        self.epsilon = config.epsilon_start
+        self.epsilon_final = config.epsilon_final
+        self.epsilon_decay = config.epsilon_decay
+        self.verbose = config.verbose
 
     def select_action(self, state):
         # Ensure state is a tensor
@@ -90,6 +90,7 @@ class Agent:
 
         self.optimizer.zero_grad()
 
+        # Iterate over the batch in chunks to save memory and speed up training
         for i in range(0, self.batch_size, chunk_size):
             chunk_transitions = Transition(
                 state=batch.state[i:i + chunk_size],
