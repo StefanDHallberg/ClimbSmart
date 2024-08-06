@@ -47,7 +47,8 @@ class TrainingGame:
                 epsilon_start=config.epsilon_start,
                 epsilon_final=config.epsilon_final,
                 epsilon_decay=config.epsilon_decay,
-                verbose=self.verbose
+                verbose=self.verbose,
+                target_update_frequency=config.target_update_frequency
             ) for _ in range(self.num_agents)
         ]
 
@@ -89,7 +90,6 @@ class TrainingGame:
                 raise TypeError("Expected preprocessed_screen to be a NumPy array.")
 
 
-
     def run_game(self):
         try:
             while not self.stop_event.is_set():
@@ -101,6 +101,7 @@ class TrainingGame:
 
                 while self.is_running and not self.stop_event.is_set() and time.time() - self.start_time <= self.max_episode_duration:
                     self.handle_events()
+
 
                     # Capture and preprocess screen
                     raw_screen = self.renderer.capture_screen()
@@ -168,6 +169,7 @@ class TrainingGame:
                 player.reached_milestones[milestone] = True
                 print(f"Agent {agent_id} reached score {milestone}, additional reward: {reward_increment}")
 
+
     def update_agents(self, episode, states, preprocessed_screen):
         total_rewards = []
         for agent_id, ai_integration in enumerate(self.ai_integrations):
@@ -213,11 +215,6 @@ class TrainingGame:
             # Log the reward
             total_rewards.append(reward if reward is not None else 0)  # Ensure reward is numeric
         return total_rewards
-
-
-
-
-
 
     def cleanup(self):
         try:

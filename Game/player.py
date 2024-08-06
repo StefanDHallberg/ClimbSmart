@@ -86,14 +86,6 @@ class Player(pygame.sprite.Sprite):
         self.rect.left = max(self.rect.left, 0)
         self.rect.right = min(self.rect.right, self.screen_width)
 
-    # def is_on_platform(self, platforms):
-    #     for platform in platforms:
-    #         if self.rect.colliderect(platform.rect) and self.rect.bottom == platform.rect.top:
-    #             print(f"Player {self.rect} on platform {platform.rect}")  # Debugging print
-    #             return True
-    #     # print("Player not on platform")  # Debugging print
-    #     return False
-
     def handle_movement(self, keys):
         if keys.get(pygame.K_a, False):
             self.rect.centerx -= self.vel

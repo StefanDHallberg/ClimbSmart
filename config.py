@@ -4,12 +4,13 @@ screen_height = 900
 max_episode_duration = 25  # in seconds
 
 # Agent Settings
-num_agents = 2
+num_agents = 1
 input_channels = 3
 num_actions = 3
 learning_rate = 0.001
 gamma = 0.99  # Discount factor
 batch_size = 64
+target_update_frequency = 10  # Update target network every X episodes
 
 # Replay Memory Settings
 memory_capacity = 50000  # Capacity of the replay memory

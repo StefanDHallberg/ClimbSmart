@@ -21,18 +21,11 @@ class DQN(nn.Module):
 
     def forward(self, x):
         x = torch.relu(self.conv1(x))
-        # print(f"After conv1: {x.shape}")
         x = torch.relu(self.conv2(x))
-        # print(f"After conv2: {x.shape}")
         x = torch.relu(self.conv3(x))
-        # print(f"After conv3: {x.shape}")
         x = x.view(x.size(0), -1)  # Flatten the tensor
-        # print(f"After flatten: {x.shape}")
         x = torch.relu(self.fc1(x))
-        # print(f"After fc1: {x.shape}")
         x = torch.relu(self.fc2(x))
-        # print(f"After fc2: {x.shape}")
         x = self.out(x)
-        # print(f"Output shape: {x.shape}")
         return x
 
