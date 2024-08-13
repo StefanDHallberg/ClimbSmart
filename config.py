@@ -1,7 +1,7 @@
 # General Game Settings
 screen_width = 800
 screen_height = 900
-max_episode_duration = 25  # in seconds
+max_episode_duration = 10  # in seconds
 
 # Agent Settings
 num_agents = 1
@@ -14,6 +14,7 @@ target_update_frequency = 10  # Update target network every X episodes
 
 # Replay Memory Settings
 memory_capacity = 50000  # Capacity of the replay memory
+save_increment_size = 1000  # Save X entries to memory
 
 # Epsilon-Greedy Strategy Settings
 epsilon_start = 1.0

@@ -25,33 +25,36 @@ class Agent:
         self.gamma = config.gamma
         self.batch_size = config.batch_size
         self.num_actions = config.num_actions
-        self.epsilon = config.epsilon_start
+        self.epsilon_start = config.epsilon_start
         self.epsilon_final = config.epsilon_final
         self.epsilon_decay = config.epsilon_decay
         self.verbose = config.verbose
         self.target_update_frequency = target_update_frequency
         self.steps_done = 0
 
+        self.reset()  # Initialize internal states
+
+    def reset(self):
+        self.epsilon = self.epsilon_start
+        self.steps_done = 0
+        self.policy_net.load_state_dict(self.target_net.state_dict())  # Sync the networks
+        if self.verbose:
+            print("Agent reset: epsilon reset, steps_done reset, networks synchronized")
+
     def select_action(self, state):
-        # Ensure state is a tensor
         if isinstance(state, np.ndarray):
             state = torch.from_numpy(state).float().unsqueeze(0).to(device)
 
         if self.verbose:
-            # Print state shape for debugging
-            print(f"State shape before action selection: {state.shape}")  # Debugging statement
+            print(f"State shape before action selection: {state.shape}")
 
         with torch.no_grad():
             if random.random() > self.epsilon:
-                # Get Q-values for all actions
                 q_values = self.policy_net(state)
-                # Print Q-values shape for debugging
-                print(f"Q-values shape: {q_values.shape}")  # Debugging statement
+                print(f"Q-values shape: {q_values.shape}")
 
-                # Check if q_values has the correct shape
                 if q_values.size(0) == 1 and q_values.size(1) == self.num_actions:
-                    # Select the action with the maximum Q-value
-                    action = q_values.max(1)[1].view(1, 1)  # Ensure correct indexing
+                    action = q_values.max(1)[1].view(1, 1)
                     if self.verbose:
                         print(f"Action selected (exploitation): {action}")
                 else:
@@ -59,7 +62,6 @@ class Agent:
 
                 return action
             else:
-                # Select a random action
                 action = torch.tensor([[random.randrange(self.num_actions)]], dtype=torch.long).to(device)
                 if self.verbose:
                     print(f"Selected action (exploration): {action}")

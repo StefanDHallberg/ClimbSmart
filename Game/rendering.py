@@ -49,13 +49,21 @@ class GameRenderer:
         return screen_image
 
     def preprocess_image(self, image, width, height):
-        """Resize and normalize the image."""
+        """Resize, convert to grayscale, and normalize the image."""
         if image.size == 0:
             raise ValueError("Captured image is empty. Ensure the screen is being captured correctly.")
 
-        # Resize the image to match the network's input size
-        # print(f"Resizing image from shape {image.shape} to ({height}, {width})")  # Debugging statement
-        resized_image = cv2.resize(image, (width, height))  # OpenCV expects width, height in this order
+        # Convert the image to grayscale
+        grayscale_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+
+        # Resize the image to match the network's input size (downsampling)
+        resized_image = cv2.resize(grayscale_image, (width, height))  # OpenCV expects width, height in this order
+
         # Normalize the pixel values to [0, 1]
         normalized_image = resized_image / 255.0
+
+        # Expand dimensions to match expected input shape (1, height, width) for a single-channel image
+        normalized_image = np.expand_dims(normalized_image, axis=0)
+
         return normalized_image
+

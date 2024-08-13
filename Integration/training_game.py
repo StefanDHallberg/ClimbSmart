@@ -102,14 +102,13 @@ class TrainingGame:
                 while self.is_running and not self.stop_event.is_set() and time.time() - self.start_time <= self.max_episode_duration:
                     self.handle_events()
 
-
                     # Capture and preprocess screen
                     raw_screen = self.renderer.capture_screen()
                     preprocessed_screen = self.renderer.preprocess_image(raw_screen, self.screen_width, self.screen_height)
 
                     # Convert preprocessed image to tensor and check its shape
                     states = self.get_states(preprocessed_screen)
-                   
+                    
                     # Use states as input for your neural network
                     total_rewards = self.update_agents(self.episode, states, preprocessed_screen)
                     total_reward += sum(total_rewards)
@@ -117,6 +116,10 @@ class TrainingGame:
                     self.update_display(self.episode, total_reward)
 
                     self.clock.tick(60)  # Limit frame rate to 60 FPS
+
+                    # If the episode is done, break the loop
+                    if time.time() - self.start_time >= self.max_episode_duration:
+                        self.is_running = False
 
                 if not self.stop_event.is_set():
                     for ai_integration in self.ai_integrations:
@@ -130,10 +133,14 @@ class TrainingGame:
                 self.episode += 1
                 self.reset_game_state()
 
-                # Save replay memory at intervals
+                # Incrementally save only new entries
                 if self.episode % self.save_interval == 0:
+                    print(f"Attempting to incrementally save replay memory at episode {self.episode}")
                     for i, ai_integration in enumerate(self.ai_integrations):
-                        ai_integration.replay_memory.save_memory(config.replay_memory_file_template.format(i=i))
+                        new_entries = list(ai_integration.replay_memory.memory)[-config.save_increment_size:]
+                        ai_integration.replay_memory.save_memory_incremental(config.replay_memory_file_template.format(i=i), new_entries)
+
+
 
         except KeyboardInterrupt:
             print("Training loop interrupted by user")
@@ -172,15 +179,18 @@ class TrainingGame:
 
     def update_agents(self, episode, states, preprocessed_screen):
         total_rewards = []
+        elapsed_time = time.time() - self.start_time  # Calculate elapsed time
+        done = elapsed_time >= self.max_episode_duration  # Check if episode duration is reached
+
         for agent_id, ai_integration in enumerate(self.ai_integrations):
             if self.verbose:
                 print(f"Agent {agent_id} state: {states[agent_id].shape}")
 
             # Get the action from the AI integration
-            state = states[agent_id].unsqueeze(0)  # Add batch dimension if necessary
+            state = states[agent_id].unsqueeze(0)
             action = ai_integration.select_action_and_update(state)
             if isinstance(action, torch.Tensor):
-                action = action.item()  # Convert torch.Tensor to a Python int if necessary
+                action = action.item()
 
             if self.verbose:
                 print(f"Selected action for agent {agent_id}: {action}")
@@ -201,20 +211,21 @@ class TrainingGame:
             next_state = self.get_states(preprocessed_screen)[agent_id]
 
             # Add the transition to the replay memory
-            done = False  # Update this based on your game's end condition
-
-            # Ensure the transition is stored as NumPy arrays
             ai_integration.replay_memory.push(
-                states[agent_id].numpy(),   # Convert tensor to NumPy array
+                states[agent_id].numpy(),
                 action,
                 reward,
-                next_state.numpy(),  # Convert tensor to NumPy array
+                next_state.numpy(),
                 done
             )
 
-            # Log the reward
-            total_rewards.append(reward if reward is not None else 0)  # Ensure reward is numeric
+            total_rewards.append(reward if reward is not None else 0)
+
+            if done:
+                break  # Exit the loop early if the episode is done
+
         return total_rewards
+
 
     def cleanup(self):
         try:
@@ -251,8 +262,9 @@ class TrainingGame:
 
     def reset_platform_manager(self):
         self.platform_manager = PlatformManager(self.screen_width, self.screen_height)
+        self.initialize_platforms()  # Regenerate platforms after resetting the manager
         if self.verbose:
-            print("Platform manager reset")
+            print("Platform manager reset and platforms re-initialized")
 
     def update_players(self, agent_id, action):
         keys = {pygame.K_a: False, pygame.K_d: False, pygame.K_w: False, pygame.K_UP: False}
@@ -323,9 +335,31 @@ class TrainingGame:
     def reset_game_state(self):
         if self.verbose:
             print("Resetting game state...")
+
         self.update_display(self.episode, 0)
         self.reset_game()
-        self.ai_integrations = [GameAIIntegrations(agent, ReplayMemory(config.memory_capacity)) for agent in self.agents]
+
+        for i, ai_integration in enumerate(self.ai_integrations):
+            if ai_integration:
+                ai_integration.agent.reset()  # Reset the agent state
+                if self.verbose:
+                    print(f"Replay memory size for agent {i}: {len(ai_integration.replay_memory)}")
+
         self.update_display(self.episode, 0)
         if self.verbose:
             print("Game state reset complete.")
+    # def reset_game_state(self):
+    #     if self.verbose:
+    #         print("Resetting game state...")
+
+    #     self.update_display(self.episode, 0)
+    #     self.reset_game()
+
+    #     for i, ai_integration in enumerate(self.ai_integrations):
+    #         if ai_integration:
+    #             ai_integration.agent.reset()  # Reset the agent state
+
+    #     self.update_display(self.episode, 0)
+    #     if self.verbose:
+    #         print("Game state reset complete.")
+
