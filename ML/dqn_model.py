@@ -8,12 +8,10 @@ class DQN(nn.Module):
         self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=2)
         self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1)
 
-        def conv2d_size_out(size, kernel_size, stride):
-            return (size - kernel_size) // stride + 1
-
-        convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(input_width, 8, 4), 4, 2), 3, 1)
-        convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(input_height, 8, 4), 4, 2), 3, 1)
-        linear_input_size = convw * convh * 64
+        # Calculate the correct output size after the convolution layers
+        convw = 52  # Based on printed shapes
+        convh = 46  # Based on printed shapes
+        linear_input_size = convw * convh * 64  # 153088 is the product of these dimensions
 
         self.fc1 = nn.Linear(linear_input_size, 512)
         self.fc2 = nn.Linear(512, 256) 
@@ -21,12 +19,16 @@ class DQN(nn.Module):
 
     def forward(self, x):
         x = torch.relu(self.conv1(x))
+        print("Shape after conv1:", x.shape)  # Debugging statement
         x = torch.relu(self.conv2(x))
+        print("Shape after conv2:", x.shape)  # Debugging statement
         x = torch.relu(self.conv3(x))
+        print("Shape after conv3:", x.shape)  # Debugging statement
+
         x = x.view(x.size(0), -1)  # Flatten the tensor
+        print("Shape after flattening:", x.shape)  # Debugging statement
+
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
         x = self.out(x)
         return x
-
-

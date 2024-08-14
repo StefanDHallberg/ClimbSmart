@@ -1,108 +1,89 @@
 import os
 import pickle
-import random
 import numpy as np
 import torch
-import blosc
 from collections import deque
-from concurrent.futures import ThreadPoolExecutor
-import threading
 
-class ReplayMemory:
-    def __init__(self, capacity, save_batch_size=1000, max_chunk_size=1000, save_dir="replay_memory"):
+class PrioritizedReplayMemory:
+    def __init__(self, capacity, alpha=0.6, save_dir="replay_memory"):
         self.capacity = capacity
+        self.alpha = alpha
         self.memory = deque(maxlen=capacity)
-        self.save_batch_size = save_batch_size
-        self.max_chunk_size = max_chunk_size  # Max number of transitions per chunk
-        self.executor = ThreadPoolExecutor(max_workers=2)
-        self.lock = threading.Lock()  # Lock for synchronizing file access
-        self.current_file_index = 0
+        self.priorities = np.zeros((capacity,), dtype=np.float32)
+        self.position = 0
         self.save_dir = save_dir
-        self.index_filename = os.path.join(save_dir, "memory_agent_0_index.pkl")
+        self.save_file = os.path.join(save_dir, "memory.pkl")
 
         # Create the save directory if it doesn't exist
         os.makedirs(self.save_dir, exist_ok=True)
 
-        # Load the index file if it exists
-        if os.path.exists(self.index_filename):
-            with open(self.index_filename, 'rb') as f:
-                self.current_file_index = pickle.load(f)
-
     def push(self, state, action, reward, next_state, done):
-        """Saves a transition."""
-        if isinstance(state, torch.Tensor):
-            state = state.detach().cpu().numpy().astype(np.float32)
-        if isinstance(next_state, torch.Tensor):
-            next_state = next_state.detach().cpu().numpy().astype(np.float32)
+        """Save a transition."""
+        max_priority = self.priorities.max() if len(self.memory) > 0 else 1.0
 
-        transition = (state, action, reward, next_state, done)
-        self.memory.append(transition)
+        if len(self.memory) < self.capacity:
+            self.memory.append(None)
+        self.memory[self.position] = (state, action, reward, next_state, done)
+        self.priorities[self.position] = max_priority
+        self.position = (self.position + 1) % self.capacity
 
-    def sample(self, batch_size):
-        """Samples a random batch of transitions."""
-        batch = random.sample(self.memory, batch_size)
-        return map(np.array, zip(*batch))
+    def sample(self, batch_size, beta=0.4):
+        """Sample a batch of transitions with probability proportional to their priority."""
+        if len(self.memory) == self.capacity:
+            priorities = self.priorities
+        else:
+            priorities = self.priorities[:self.position]
+
+        probabilities = priorities ** self.alpha
+        probabilities /= probabilities.sum()
+
+        # Add a check for NaN values in probabilities
+        if np.isnan(probabilities).any():
+            raise ValueError("Probabilities contain NaN values.")
+
+        indices = np.random.choice(len(self.memory), batch_size, p=probabilities)
+        samples = [self.memory[idx] for idx in indices]
+
+        # Compute importance sampling weights
+        total = len(self.memory)
+        weights = (total * probabilities[indices]) ** (-beta)
+        weights /= weights.max()
+        weights = torch.tensor(weights, dtype=torch.float32)
+
+        states, actions, rewards, next_states, dones = zip(*samples)
+        return (
+            np.array(states, dtype=np.float32),
+            np.array(actions, dtype=np.int32),
+            np.array(rewards, dtype=np.float32),
+            np.array(next_states, dtype=np.float32),
+            np.array(dones, dtype=bool),  
+            indices,
+            weights,
+        )
+
+    def update_priorities(self, batch_indices, batch_priorities):
+        """Update priorities of sampled transitions."""
+        for idx, priority in zip(batch_indices, batch_priorities):
+            self.priorities[idx] = priority
+
+    def save_memory(self):
+        """Save replay memory to disk."""
+        try:
+            with open(self.save_file, 'wb') as f:
+                pickle.dump((self.memory, self.priorities, self.position), f, protocol=pickle.HIGHEST_PROTOCOL)
+            print(f"Replay memory saved to {self.save_file}")
+        except Exception as e:
+            print(f"Failed to save replay memory: {e}")
+
+    def load_memory(self):
+        """Load replay memory from disk."""
+        try:
+            if os.path.exists(self.save_file):
+                with open(self.save_file, 'rb') as f:
+                    self.memory, self.priorities, self.position = pickle.load(f)
+                print(f"Replay memory loaded from {self.save_file}")
+        except Exception as e:
+            print(f"Failed to load replay memory: {e}")
 
     def __len__(self):
         return len(self.memory)
-
-    def _compress_and_save(self):
-        try:
-            with self.lock:
-                # Prepare the filename where data will be saved
-                filename = os.path.join(self.save_dir, f"memory_agent_0_{self.current_file_index}.pkl")
-
-                # Split memory into chunks and save each chunk
-                for i in range(0, len(self.memory), self.max_chunk_size):
-                    chunk = list(self.memory)[i:i + self.max_chunk_size]
-                    
-                    # Serialize and compress the chunk
-                    serialized_data = pickle.dumps(chunk, protocol=pickle.HIGHEST_PROTOCOL)
-                    compressed_data = blosc.compress(serialized_data, typesize=8, clevel=5, cname='lz4')
-                    
-                    # Save the compressed chunk to the file
-                    with open(filename, 'ab') as f:  # Append to the file
-                        f.write(compressed_data)
-                    
-                    # Clean up memory used by this chunk
-                    del serialized_data, compressed_data, chunk
-                    torch.cuda.empty_cache()  # Clear GPU memory if applicable
-
-                    # Increment the file index for the next chunk
-                    self.current_file_index += 1
-
-                # Update the index file after saving all chunks
-                with open(self.index_filename, 'wb') as f:
-                    pickle.dump(self.current_file_index, f)
-
-                print(f"Saved {len(self.memory)} transitions to '{filename}'")
-        except Exception as e:
-            print(f"Error during saving to file: {e}")
-        finally:
-            torch.cuda.empty_cache()  # Ensure GPU memory is cleared at the end
-
-
-    def save_memory_async(self):
-        """Asynchronously saves the replay memory."""
-        self.executor.submit(self._compress_and_save)
-
-    def load_memory(self):
-        """Loads and decompresses the replay memory, limiting to the most recent experiences."""
-        all_transitions = []
-        filename = os.path.join(self.save_dir, "memory_agent_0.pkl")
-        try:
-            with open(filename, 'rb') as f:
-                while len(all_transitions) < self.capacity:
-                    compressed_data = f.read(self.max_chunk_size)
-                    if not compressed_data:
-                        break
-                    decompressed_data = blosc.decompress(compressed_data)
-                    loaded_memory = pickle.loads(decompressed_data)
-                    all_transitions.extend(loaded_memory[:self.capacity - len(all_transitions)])
-        except Exception as e:
-            print(f"Error loading replay memory: {e}")
-
-        self.memory = deque(all_transitions, maxlen=self.capacity)
-        print(f"Loaded replay memory with {len(self.memory)} transitions.")
-
-

@@ -2,7 +2,7 @@ import time
 import numpy as np
 import pygame
 import torch
-from ML.memory import ReplayMemory
+from ML.memory import PrioritizedReplayMemory
 from ML.agent import Agent
 from Game.platforms import PlatformManager
 from Game.player import Player
@@ -23,6 +23,10 @@ class TrainingGame:
         self.screen_height = config.screen_height
 
         self.platform_manager = PlatformManager(self.screen_width, self.screen_height)
+
+        # Initialize shared replay memory for all agents
+        self.replay_memory = PrioritizedReplayMemory(capacity=config.memory_capacity)
+
         
         self.players = [
             Player(
@@ -39,8 +43,8 @@ class TrainingGame:
             Agent(
                 input_channels=config.input_channels,
                 num_actions=config.num_actions,
-                input_width=self.screen_width,
-                input_height=self.screen_height,
+                input_width=self.screen_width // 2,  # Adjust for downscaling
+                input_height=self.screen_height // 2,  # Adjust for downscaling
                 lr=config.learning_rate,
                 gamma=config.gamma,
                 batch_size=config.batch_size,
@@ -48,14 +52,15 @@ class TrainingGame:
                 epsilon_final=config.epsilon_final,
                 epsilon_decay=config.epsilon_decay,
                 verbose=self.verbose,
-                target_update_frequency=config.target_update_frequency
+                target_update_frequency=config.target_update_frequency,
+                memory=self.replay_memory # Use the shared replay memory
             ) for _ in range(self.num_agents)
         ]
 
         self.ai_integrations = [
             GameAIIntegrations(
                 agent,
-                ReplayMemory(config.memory_capacity)
+                self.replay_memory  # Use the shared memory
             ) for agent in self.agents
         ]
 
@@ -68,25 +73,24 @@ class TrainingGame:
             print(f"State tensor shape: {self.state_tensor.shape}") #This creates a tensor that can hold the state for each agent separately.
 
         # Load memory if exists
-        for i, ai_integration in enumerate(self.ai_integrations):
-            ai_integration.replay_memory.load_memory()
+        self.replay_memory.load_memory()
+            
 
     def get_states(self, preprocessed_screen):
         with torch.no_grad():
             # Ensure the input is a NumPy array before converting it to a Tensor
             if isinstance(preprocessed_screen, np.ndarray):
-                preprocessed_screen = preprocessed_screen.astype(np.float32)  # Convert to float32
-                # Here, modify the function to handle multiple agents
-                state_tensors = []
-                for _ in range(self.num_agents):
-                    state_tensor = torch.from_numpy(preprocessed_screen).permute(2, 0, 1).unsqueeze(0).float()
-                    state_tensors.append(state_tensor)
-                batch_state_tensor = torch.cat(state_tensors, dim=0)
+                preprocessed_screen = preprocessed_screen.astype(np.float32)
+
+                # Convert the preprocessed screen (grayscale) to a tensor with shape [1, height, width]
+                state_tensor = torch.from_numpy(preprocessed_screen).unsqueeze(0)  # Adding the batch dimension
                 if self.verbose:
-                    print(f"Batch state tensor shape: {batch_state_tensor.shape}")
-                return batch_state_tensor
+                    print(f"State tensor shape: {state_tensor.shape}")
+                
+                return state_tensor  # Shape should be [1, 1, height, width] for a single agent
             else:
                 raise TypeError("Expected preprocessed_screen to be a NumPy array.")
+
             
 
     def run_game(self):
@@ -107,7 +111,6 @@ class TrainingGame:
                     raw_screen = self.renderer.capture_screen()
                     # Pass previous image to preprocess_image
                     preprocessed_screen, prev_image = self.renderer.preprocess_image(raw_screen, prev_image, self.screen_width, self.screen_height)
-
 
                     # Convert preprocessed image to tensor and check its shape
                     states = self.get_states(preprocessed_screen)
@@ -136,11 +139,11 @@ class TrainingGame:
                 self.episode += 1
                 self.reset_game_state()
 
-                # Incrementally save only new entries
+                # Save memory at regular intervals
                 if self.episode % self.save_interval == 0:
-                    print(f"Attempting to incrementally save replay memory at episode {self.episode}")
-                    for i, ai_integration in enumerate(self.ai_integrations):
-                        ai_integration.replay_memory.save_memory_async()
+                    print(f"Attempting to save replay memory at episode {self.episode}")
+                    self.replay_memory.save_memory()
+                    
         except KeyboardInterrupt:
             print("Training loop interrupted by user")
             self.stop_event.set()
