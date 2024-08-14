@@ -13,6 +13,7 @@ class GameRenderer:
         pygame.display.set_caption("ClimbSmart Multi-Agent")
         self.clock = pygame.time.Clock()
         self.queues = [queue.Queue() for _ in range(num_agents)]
+        
 
     def render(self):
         running = True
@@ -48,22 +49,25 @@ class GameRenderer:
         # print(f"Captured screen image shape: {screen_image.shape}")  # debug
         return screen_image
 
-    def preprocess_image(self, image, width, height):
-        """Resize, convert to grayscale, and normalize the image."""
+    def preprocess_image(self, image, prev_image, width, height):
+        """Compute the difference between current and previous image, then preprocess."""
         if image.size == 0:
             raise ValueError("Captured image is empty. Ensure the screen is being captured correctly.")
 
-        # Convert the image to grayscale
+        # Convert to grayscale
         grayscale_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
-        # Resize the image to match the network's input size (downsampling)
-        resized_image = cv2.resize(grayscale_image, (width, height))  # OpenCV expects width, height in this order
+        # Compute the difference from the previous image
+        if prev_image is not None:
+            diff_image = cv2.absdiff(grayscale_image, prev_image)
+        else:
+            diff_image = grayscale_image
 
-        # Normalize the pixel values to [0, 1]
+        # Downsample and normalize
+        resized_image = cv2.resize(diff_image, (width // 2, height // 2))
         normalized_image = resized_image / 255.0
-
-        # Expand dimensions to match expected input shape (1, height, width) for a single-channel image
         normalized_image = np.expand_dims(normalized_image, axis=0)
 
-        return normalized_image
+        return normalized_image, grayscale_image  # Return the current grayscale image as the next previous image
+
 

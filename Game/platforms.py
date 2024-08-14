@@ -36,12 +36,12 @@ class PlatformManager:
             platform_centerx = random.randint(platform_width // 2, self.screen_width - platform_width // 2)
             
             # Ensure the next platform is not too far from the last one
-            min_distance = 65
+            min_distance = 50
             while abs(platform_centerx - last_platform.rect.centerx) < min_distance:
                 platform_centerx = random.randint(platform_width // 2, self.screen_width - platform_width // 2)
 
             # Adjust platform_centery to make platforms closer
-            platform_centery = last_platform.rect.centery - random.randint(60, 70)  # Adjust these values as needed, based on the desired platform spacing and height.
+            platform_centery = last_platform.rect.centery - random.randint(50, 60)  # Adjust these values as needed, based on the desired platform spacing and height.
             new_platform = Platform(platform_centerx, platform_centery, platform_width, platform_height)
             self.platforms.add(new_platform)
             
@@ -54,12 +54,12 @@ class PlatformManager:
             platform_centerx = random.randint(platform_width // 2, self.screen_width - platform_width // 2)
             
             # Ensure the next platform is not too far from the last one
-            min_distance = 65
+            min_distance = 50
             while abs(platform_centerx - last_platform.rect.centerx) < min_distance:
                 platform_centerx = random.randint(platform_width // 2, self.screen_width - platform_width // 2)
 
             # Adjust platform_centery to make platforms closer
-            platform_centery = last_platform.rect.centery - random.randint(60, 70)  # Adjust these values as needed, based on the desired platform spacing and height.
+            platform_centery = last_platform.rect.centery - random.randint(50, 60)  # Adjust these values as needed, based on the desired platform spacing and height.
             new_platform = Platform(platform_centerx, platform_centery, platform_width, platform_height)
             self.platforms.add(new_platform)
 

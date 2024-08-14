@@ -5,7 +5,7 @@ max_episode_duration = 30  # in seconds
 
 # Agent Settings
 num_agents = 1
-input_channels = 3
+input_channels = 1 # Grayscale image 
 num_actions = 3
 learning_rate = 0.001
 gamma = 0.99  # Discount factor

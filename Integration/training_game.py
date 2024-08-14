@@ -69,7 +69,7 @@ class TrainingGame:
 
         # Load memory if exists
         for i, ai_integration in enumerate(self.ai_integrations):
-            ai_integration.replay_memory.load_memory(f"memory_agent_{i}.pkl")
+            ai_integration.replay_memory.load_memory()
 
     def get_states(self, preprocessed_screen):
         with torch.no_grad():
@@ -91,6 +91,8 @@ class TrainingGame:
 
     def run_game(self):
         try:
+            prev_image = None  # Store the previous image for frame difference computation
+            
             while not self.stop_event.is_set():
                 if self.verbose:
                     print(f"Starting episode {self.episode}")
@@ -103,7 +105,9 @@ class TrainingGame:
 
                     # Capture and preprocess screen
                     raw_screen = self.renderer.capture_screen()
-                    preprocessed_screen = self.renderer.preprocess_image(raw_screen, self.screen_width, self.screen_height)
+                    # Pass previous image to preprocess_image
+                    preprocessed_screen, prev_image = self.renderer.preprocess_image(raw_screen, prev_image, self.screen_width, self.screen_height)
+
 
                     # Convert preprocessed image to tensor and check its shape
                     states = self.get_states(preprocessed_screen)
@@ -136,11 +140,7 @@ class TrainingGame:
                 if self.episode % self.save_interval == 0:
                     print(f"Attempting to incrementally save replay memory at episode {self.episode}")
                     for i, ai_integration in enumerate(self.ai_integrations):
-                        new_entries = list(ai_integration.replay_memory.memory)[-config.save_increment_size:]
-                        ai_integration.replay_memory.save_memory_incremental(config.replay_memory_file_template.format(i=i), new_entries)
-
-
-
+                        ai_integration.replay_memory.save_memory_async()
         except KeyboardInterrupt:
             print("Training loop interrupted by user")
             self.stop_event.set()
@@ -348,18 +348,3 @@ class TrainingGame:
         self.update_display(self.episode, 0)
         if self.verbose:
             print("Game state reset complete.")
-    # def reset_game_state(self):
-    #     if self.verbose:
-    #         print("Resetting game state...")
-
-    #     self.update_display(self.episode, 0)
-    #     self.reset_game()
-
-    #     for i, ai_integration in enumerate(self.ai_integrations):
-    #         if ai_integration:
-    #             ai_integration.agent.reset()  # Reset the agent state
-
-    #     self.update_display(self.episode, 0)
-    #     if self.verbose:
-    #         print("Game state reset complete.")
-
