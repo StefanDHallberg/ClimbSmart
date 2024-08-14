@@ -75,20 +75,19 @@ class TrainingGame:
         with torch.no_grad():
             # Ensure the input is a NumPy array before converting it to a Tensor
             if isinstance(preprocessed_screen, np.ndarray):
+                preprocessed_screen = preprocessed_screen.astype(np.float32)  # Convert to float32
                 # Here, modify the function to handle multiple agents
                 state_tensors = []
                 for _ in range(self.num_agents):
-                    # Convert the image to a PyTorch tensor and add a batch dimension
                     state_tensor = torch.from_numpy(preprocessed_screen).permute(2, 0, 1).unsqueeze(0).float()
                     state_tensors.append(state_tensor)
-                # Stack tensors to create a batch
                 batch_state_tensor = torch.cat(state_tensors, dim=0)
                 if self.verbose:
-                    print(f"Batch state tensor shape: {batch_state_tensor.shape}")  # Should show: [num_agents, 3, height, width]
+                    print(f"Batch state tensor shape: {batch_state_tensor.shape}")
                 return batch_state_tensor
             else:
                 raise TypeError("Expected preprocessed_screen to be a NumPy array.")
-
+            
 
     def run_game(self):
         try:
@@ -235,6 +234,7 @@ class TrainingGame:
         except Exception as e:
             print(f"Exception during cleanup: {e}")
         finally:
+            torch.cuda.empty_cache() # Clear GPU memory
             print("Clean up in TrainingGame")
 
     def initialize_platforms(self):

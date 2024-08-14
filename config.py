@@ -1,7 +1,7 @@
 # General Game Settings
 screen_width = 800
 screen_height = 900
-max_episode_duration = 10  # in seconds
+max_episode_duration = 30  # in seconds
 
 # Agent Settings
 num_agents = 1
@@ -9,7 +9,7 @@ input_channels = 3
 num_actions = 3
 learning_rate = 0.001
 gamma = 0.99  # Discount factor
-batch_size = 64
+batch_size = 32
 target_update_frequency = 10  # Update target network every X episodes
 
 # Replay Memory Settings

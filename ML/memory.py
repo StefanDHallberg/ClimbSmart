@@ -2,7 +2,6 @@ from collections import namedtuple, deque
 import os
 import random
 import pickle
-import shutil
 import threading
 import numpy as np
 import torch
