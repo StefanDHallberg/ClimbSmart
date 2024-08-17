@@ -7,7 +7,7 @@ import config
 from collections import namedtuple
 from .dqn_model import DQN
 from .memory import ReplayMemory
-from torch.cuda.amp import autocast, GradScaler
+from torch.amp import autocast, GradScaler
 
 # Defining the transition tuple that will be stored in the replay memory buffer.
 Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
@@ -76,81 +76,51 @@ class Agent:
         if len(self.memory) < self.batch_size:
             return
 
-        # Sample batch of transitions
         transitions = self.memory.sample(self.batch_size)
         batch = Transition(*zip(*transitions))
 
-        chunk_size = self.batch_size // 16
-        device = torch.device("cuda")
-        accumulation_steps = 4
+        non_final_mask = torch.tensor([s is not None for s in batch.next_state], dtype=torch.bool, device=device)
+        non_final_next_states = torch.cat([s for s in batch.next_state if s is not None]).to(device)
 
-        scaler = GradScaler()
+        state_batch = torch.cat(batch.state).to(device)
+        action_batch = torch.cat(batch.action).to(device)
+        reward_batch = torch.cat(batch.reward).to(device)
 
+        # Zero the parameter gradients
         self.optimizer.zero_grad()
 
-        # Iterate over the batch in chunks to save memory and speed up training
-        for i in range(0, self.batch_size, chunk_size):
-            chunk_transitions = Transition(
-                state=batch.state[i:i + chunk_size],
-                action=batch.action[i:i + chunk_size],
-                next_state=batch.next_state[i:i + chunk_size],
-                reward=batch.reward[i:i + chunk_size]
-            )
+        with autocast():
+            state_action_values = self.policy_net(state_batch).gather(1, action_batch)
 
-            non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, chunk_transitions.next_state)), dtype=torch.bool, device=device)
-            non_final_next_states = torch.cat([s for s in chunk_transitions.next_state if s is not None], dim=0).to(device)
+            next_state_values = torch.zeros(self.batch_size, device=device)
+            if non_final_next_states.size(0) > 0:
+                next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1)[0].detach()
 
-            state_batch = torch.cat(chunk_transitions.state, dim=0).to(device)
-            action_batch = torch.cat(chunk_transitions.action, dim=0).to(device)
-            reward_batch = torch.cat(chunk_transitions.reward, dim=0).to(device)
+            expected_state_action_values = (next_state_values * self.gamma) + reward_batch.view(-1)
+            expected_state_action_values = expected_state_action_values.unsqueeze(1)
 
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-                available_memory = torch.cuda.get_device_properties(device).total_memory - torch.cuda.memory_allocated(device)
-                if available_memory < state_batch.element_size() * state_batch.nelement() * 2:
-                    print("Insufficient CUDA memory, skipping this chunk")
-                    continue
+            loss = F.smooth_l1_loss(state_action_values, expected_state_action_values)
 
-            with autocast():
-                state_action_values = self.policy_net(state_batch).gather(1, action_batch)
+        # Scale the loss and backward pass
+        scaler = GradScaler()
+        scaler.scale(loss).backward()
 
-                next_state_values = torch.zeros(chunk_size, device=device)
-                if non_final_next_states.size(0) > 0:
-                    next_q_values = self.target_net(non_final_next_states).max(1)[0]
-                    next_state_values[non_final_mask] = next_q_values
-
-                expected_state_action_values = (next_state_values * self.gamma) + reward_batch.view(-1)
-                expected_state_action_values = expected_state_action_values.unsqueeze(1)
-
-                loss = F.smooth_l1_loss(state_action_values, expected_state_action_values)
-                if self.verbose:
-                    print(f"Loss: {loss.item()}")
-
-            scaler.scale(loss).backward()
-            if (i // chunk_size + 1) % accumulation_steps == 0:
-                for param in self.policy_net.parameters():
-                    param.grad.data.clamp_(-1, 1)
-                scaler.step(self.optimizer)
-                scaler.update()
-                self.optimizer.zero_grad()
-
-            del state_batch, action_batch, reward_batch, non_final_next_states, next_state_values, state_action_values, expected_state_action_values, loss
-
-            torch.cuda.empty_cache()
-
-        for param in self.policy_net.parameters():
-            param.grad.data.clamp_(-1, 1)
+        # Gradient clipping and optimizer step
+        torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 1)
         scaler.step(self.optimizer)
         scaler.update()
-        self.optimizer.zero_grad()
 
         self.update_epsilon()
 
-        # Update the target network if necessary
+        # Update target network periodically
         if self.steps_done % self.target_update_frequency == 0:
             self.target_net.load_state_dict(self.policy_net.state_dict())
             if self.verbose:
                 print("Updated target network")
+
+        # Increment step counter
+        self.update_step_counter()
+
 
     def update_step_counter(self):
         self.steps_done += 1

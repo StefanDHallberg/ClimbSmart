@@ -241,13 +241,6 @@ class TrainingGame:
         self.platform_manager.generate_bottom_platform()
         self.platform_manager.generate_additional_platforms()
 
-    def initialize_players(self):
-        for player in self.players:
-            player.rect.x = self.screen_width // 2
-            player.rect.y = self.screen_height - 100
-            player.vel_y = 0
-            player.is_jumping = False
-
     def reset_game(self):
         self.reset_players()
         self.reset_platform_manager()
