@@ -49,19 +49,20 @@ class Agent:
             print(f"State shape before action selection: {state.shape}")
 
         with torch.no_grad():
+            # Epsilon-greedy action selection
             if random.random() > self.epsilon:
-                q_values = self.policy_net(state)
-                print(f"Q-values shape: {q_values.shape}")
+                q_values = self.policy_net(state) #forward pass the state through the network
+                if self.verbose:
+                    print(f"Q-values shape: {q_values.shape}")
+                    print(f"Q-values: {q_values}")
 
-                if q_values.size(0) == 1 and q_values.size(1) == self.num_actions:
-                    action = q_values.max(1)[1].view(1, 1)
-                    if self.verbose:
-                        print(f"Action selected (exploitation): {action}")
-                else:
-                    raise ValueError(f"Unexpected Q-values shape: {q_values.shape}")
-
+                # Select the action with the highest Q-value
+                action = q_values.max(1)[1].view(1, 1)
+                if self.verbose:
+                    print(f"Action selected (exploitation): {action}")
                 return action
             else:
+                # Select a random action
                 action = torch.tensor([[random.randrange(self.num_actions)]], dtype=torch.long).to(device)
                 if self.verbose:
                     print(f"Selected action (exploration): {action}")
@@ -76,8 +77,8 @@ class Agent:
         if len(self.memory) < self.batch_size:
             return
 
-        transitions = self.memory.sample(self.batch_size)
-        batch = Transition(*zip(*transitions))
+        transitions = self.memory.sample(self.batch_size) # Sample a batch of transitions from memory
+        batch = Transition(*zip(*transitions)) # Transpose the batch (see the Transition tuple definition)
 
         non_final_mask = torch.tensor([s is not None for s in batch.next_state], dtype=torch.bool, device=device)
         non_final_next_states = torch.cat([s for s in batch.next_state if s is not None]).to(device)
