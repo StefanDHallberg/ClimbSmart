@@ -31,6 +31,7 @@ class Agent:
         self.verbose = config.verbose
         self.target_update_frequency = target_update_frequency
 
+        self.steps_done = 0
         self.reset()  # Initialize internal states
 
     def reset(self):
@@ -43,7 +44,7 @@ class Agent:
         # Convert state to pytoch.tensor if it is a numpy array
         if isinstance(state, np.ndarray):
             state = torch.from_numpy(state).float().unsqueeze(0).to(device)
-
+            self.steps_done += 1
         if self.verbose:
             print(f"State shape before action selection: {state.shape}")
 
@@ -123,7 +124,11 @@ class Agent:
         self.update_epsilon()
 
         # Periodically update the target network to match the policy network, helping to stabilize training
-        if self.steps_done % self.target_update_frequency == 0:
+        if self.steps_done <= self.target_update_frequency:
             self.target_net.load_state_dict(self.policy_net.state_dict())
             if self.verbose:
                 print("Updated target network")
+
+        # Reset steps_done after a certain number of steps
+        if self.steps_done >= self.target_update_frequency:
+            self.steps_done = 0
